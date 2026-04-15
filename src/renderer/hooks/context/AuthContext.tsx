@@ -44,8 +44,6 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 const AUTH_USER_ENDPOINT = '/api/auth/user';
 
-const isDesktopRuntime = typeof window !== 'undefined' && Boolean(window.electronAPI);
-
 // Clear expired auth cache including cookies and localStorage
 // 清除过期的认证缓存，包括 Cookie 和 localStorage
 function clearAuthCache(): void {
@@ -106,13 +104,6 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
   const abortRef = useRef<AbortController | null>(null);
 
   const refresh = useCallback(async () => {
-    if (isDesktopRuntime) {
-      setStatus('authenticated');
-      setUser(null);
-      setReady(true);
-      return;
-    }
-
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -138,11 +129,6 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
 
   const login = useCallback(async ({ username, password, remember }: LoginParams): Promise<LoginResult> => {
     try {
-      if (isDesktopRuntime) {
-        setReady(true);
-        return { success: true };
-      }
-
       // Check CSRF token availability before login
       // If token is missing, clear cache and inform user
       const csrfTokenValid = hasValidCsrfToken();
@@ -239,13 +225,6 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
   }, []);
 
   const logout = useCallback(async () => {
-    if (isDesktopRuntime) {
-      setUser(null);
-      setStatus('authenticated');
-      setReady(true);
-      return;
-    }
-
     try {
       await fetch('/logout', {
         method: 'POST',

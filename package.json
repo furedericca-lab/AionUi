@@ -8,30 +8,13 @@
     "name": "AionUi",
     "email": "service@aionui.com"
   },
-  "main": "./out/main/index.js",
   "scripts": {
-    "start": "electron-vite dev",
-    "start:multi": "cross-env AIONUI_MULTI_INSTANCE=1 electron-vite dev",
-    "cli": "electron-vite dev",
-    "webui": "rm -rf out/renderer && electron-vite dev -- --webui",
-    "webui:remote": "rm -rf out/renderer && electron-vite dev -- --webui --remote",
-    "webui:prod": "cross-env NODE_ENV=production electron-vite dev -- --webui",
-    "webui:prod:remote": "cross-env NODE_ENV=production electron-vite dev -- --webui --remote",
-    "resetpass": "electron-vite dev -- --resetpass",
-    "package": "electron-vite build",
-    "make": "electron-vite build",
-    "dist": "node scripts/build-with-builder.js",
-    "dist:mac": "node scripts/build-with-builder.js auto --mac",
-    "dist:win": "node scripts/build-with-builder.js auto --win",
-    "dist:linux": "node scripts/build-with-builder.js auto --linux",
-    "build-mac": "node scripts/build-with-builder.js auto --mac --arm64 --x64",
-    "build-win": "node scripts/build-with-builder.js auto --win",
-    "build-deb": "node scripts/build-with-builder.js auto --linux",
-    "build-mac:arm64": "node scripts/build-with-builder.js arm64 --mac --arm64",
-    "build-mac:x64": "node scripts/build-with-builder.js x64 --mac --x64",
-    "build-win:arm64": "node scripts/build-with-builder.js arm64 --win --arm64",
-    "build-win:x64": "node scripts/build-with-builder.js x64 --win --x64",
-    "build": "node scripts/build-with-builder.js auto --mac --arm64 --x64",
+    "build:renderer:web": "bunx vite build --config vite.renderer.config.ts",
+    "build:server": "node scripts/build-server.mjs",
+    "build": "bun run build:renderer:web && bun run build:server",
+    "start": "NODE_ENV=development bun dist-server/server.mjs",
+    "start:prod": "NODE_ENV=production bun dist-server/server.mjs",
+    "resetpass": "NODE_ENV=production bun dist-server/server.mjs --resetpass",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "format": "oxfmt",
@@ -42,31 +25,14 @@
     "test:coverage": "vitest run --coverage",
     "test:contract": "vitest run tests/contract --passWithNoTests",
     "test:integration": "vitest run tests/integration",
-    "test:packaged:i18n": "vitest run tests/integration/i18n-packaged.test.ts",
-    "debug:perf": "cross-env ACP_PERF=1 PERF_MONITOR=1 bun start",
+    "test:bun": "bun test src/process/services/database/drivers/*.bun.test.ts",
     "debug:perf:report": "bunx tsx scripts/debug-performance.ts --report",
     "debug:mcp": "bunx tsx scripts/debug-mcp.ts",
     "debug:mcp:list": "bunx tsx scripts/debug-mcp.ts list",
     "debug:mcp:validate": "bunx tsx scripts/debug-mcp.ts validate",
     "debug:custom-agent": "bunx tsx scripts/debug-custom-agent.ts",
-    "test:e2e": "playwright test --config playwright.config.ts",
-    "test:e2e:team": "playwright test --config playwright.config.ts tests/e2e/specs/team-*.e2e.ts --reporter=list",
-    "test:e2e:team:create": "playwright test --config playwright.config.ts tests/e2e/specs/team-create.e2e.ts --reporter=list",
-    "test:e2e:team:lifecycle": "playwright test --config playwright.config.ts tests/e2e/specs/team-agent-lifecycle.e2e.ts --reporter=list",
-    "test:e2e:team:whitelist": "playwright test --config playwright.config.ts tests/e2e/specs/team-whitelist.e2e.ts --reporter=list",
-    "test:e2e:team:comm": "playwright test --config playwright.config.ts tests/e2e/specs/team-communication.e2e.ts --reporter=list",
     "prepare": "husky",
-    "postinstall": "node scripts/postinstall.js",
-    "test:packaged:bun": "vitest run tests/integration/bundled-bun-packaged.test.ts",
-    "test:bun": "bun test src/process/services/database/drivers/*.bun.test.ts",
-    "server:start": "NODE_ENV=development bun dist-server/server.mjs",
-    "server:start:remote": "NODE_ENV=development ALLOW_REMOTE=true bun dist-server/server.mjs",
-    "server:start:prod": "NODE_ENV=production bun dist-server/server.mjs",
-    "server:start:prod:remote": "NODE_ENV=production ALLOW_REMOTE=true bun dist-server/server.mjs",
-    "server:resetpass": "NODE_ENV=development bun dist-server/server.mjs --resetpass",
-    "server:resetpass:prod": "NODE_ENV=production bun dist-server/server.mjs --resetpass",
-    "build:renderer:web": "bunx vite build --config vite.renderer.config.ts",
-    "build:server": "node scripts/build-server.mjs"
+    "postinstall": "node scripts/postinstall.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
@@ -87,7 +53,6 @@
     "@monaco-editor/react": "^4.7.0",
     "@office-ai/aioncli-core": "^0.30.5",
     "@office-ai/platform": "^0.3.16",
-    "@sentry/electron": "^7.10.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@uiw/codemirror-extensions-langs": "^4.25.1",
@@ -105,13 +70,9 @@
     "diff2html": "^3.4.55",
     "dingtalk-stream": "^2.1.4",
     "docx": "^9.5.1",
-    "electron-log": "^5.4.3",
-    "electron-squirrel-startup": "^1.0.1",
-    "electron-updater": "^6.6.2",
     "eventemitter3": "^5.0.1",
     "express": "^5.1.0",
     "express-rate-limit": "^7.5.1",
-    "fix-path": "^4.0.0",
     "grammy": "^1.39.3",
     "html-to-text": "^9.0.5",
     "i18next": "^23.7.16",
@@ -155,9 +116,6 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@electron/fuses": "^1.8.0",
-    "@electron/notarize": "^3.1.0",
-    "@playwright/test": "^1.58.2",
     "@sentry/vite-plugin": "^5.1.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -178,9 +136,6 @@
     "@vitest/coverage-v8": "^4.0.18",
     "cross-env": "^7.0.3",
     "dotenv": "^17.2.1",
-    "electron": "^37.10.3",
-    "electron-builder": "^26.6.0",
-    "electron-vite": "^5.0.0",
     "esbuild": "^0.25.11",
     "husky": "^9.1.7",
     "jest": "^30.1.3",
@@ -200,8 +155,7 @@
     "vitest": "^4.0.18"
   },
   "optionalDependencies": {
-    "@rollup/rollup-win32-x64-msvc": "^4.46.2",
-    "electron-winstaller": "^5.4.0"
+    "@rollup/rollup-win32-x64-msvc": "^4.46.2"
   },
   "resolutions": {
     "body-parser": "^2.2.1",
@@ -236,11 +190,7 @@
   "engines": {
     "node": ">=22 <25"
   },
-  "electronRebuild": {
-    "electronVersion": "^37.3.1"
-  },
   "patchedDependencies": {
     "7zip-bin@5.2.0": "patches/7zip-bin@5.2.0.patch"
-  },
-  "productName": "AionUi"
+  }
 }

@@ -333,11 +333,8 @@ const ConversationSearchPopover: React.FC<ConversationSearchPopoverProps> = ({
       if ((event as unknown as { isComposing?: boolean }).isComposing) return;
       const key = event.key.toLowerCase();
       const isCmdOrCtrl = event.metaKey || event.ctrlKey;
-      if (!isCmdOrCtrl || !event.shiftKey || key !== 'f' || event.altKey) return;
-      // Preserve browser behavior in WebUI; only intercept in the desktop runtime.
-      if (typeof window !== 'undefined' && !window.electronAPI) return;
-      event.preventDefault();
-      handleOpen();
+      if (!isCmdOrCtrl || !event.shiftKey || key != 'f' || event.altKey) return;
+      return;
     };
 
     document.addEventListener('keydown', handleGlobalSearchShortcut, true);

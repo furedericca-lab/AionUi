@@ -7,7 +7,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLatestRef } from '@/renderer/hooks/ui/useLatestRef';
 import { transcribeAudioBlob } from '@/renderer/services/SpeechToTextService';
-import { isElectronDesktop } from '@/renderer/utils/platform';
 
 export type SpeechInputAvailability = 'record' | 'file' | 'unsupported';
 export type SpeechInputStatus = 'idle' | 'recording' | 'transcribing' | 'error';
@@ -86,7 +85,7 @@ const getSpeechInputEnvironment = (): SpeechInputEnvironment => {
     hasMediaDevices: typeof navigator !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia),
     hasMediaRecorder: typeof MediaRecorder !== 'undefined',
     hostname: window.location.hostname,
-    isElectronDesktop: isElectronDesktop(),
+    isElectronDesktop: false,
     isSecureContext: window.isSecureContext,
   };
 };

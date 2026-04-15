@@ -8,6 +8,8 @@ import { getPlatformServices } from '@/common/platform';
 import { getDataPath } from '@process/utils';
 import * as path from 'path';
 import type { ExtensionSource } from './types';
+
+type ProcessWithResourcesPath = NodeJS.Process & { resourcesPath?: string };
 export const AIONUI_EXTENSIONS_PATH_ENV = 'AIONUI_EXTENSIONS_PATH';
 export const AIONUI_STRICT_ENV_ENV = 'AIONUI_STRICT_ENV';
 export const EXTENSION_MANIFEST_FILE = 'aion-extension.json';
@@ -60,8 +62,9 @@ export const HUB_INDEX_FILE = 'index.json';
 
 /** Path to the bundled hub resources directory. */
 export function getHubResourcesDir(): string {
+  const resourcesPathFromProcess = (process as ProcessWithResourcesPath).resourcesPath;
   const resourcesPath = getPlatformServices().paths.isPackaged()
-    ? process.resourcesPath
+    ? resourcesPathFromProcess ?? path.join(process.cwd(), 'resources')
     : path.join(process.cwd(), 'resources');
   return path.join(resourcesPath, 'hub');
 }

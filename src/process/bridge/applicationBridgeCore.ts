@@ -6,14 +6,24 @@
 
 /**
  * Platform-agnostic application bridge handlers.
- * Safe to use in both Electron and standalone server mode.
- * Electron-only handlers (restart, devtools, zoom, CDP) remain in applicationBridge.ts.
+ * Safe to use in standalone server mode.
  */
 import os from 'os';
 import path from 'path';
 import { ipcBridge } from '@/common';
-import { getSystemDir, ProcessEnv } from '@process/utils/initStorage';
+import { ProcessConfig, getSystemDir, ProcessEnv } from '@process/utils/initStorage';
 import { copyDirectoryRecursively, getConfigPath, getDataPath, resolveCliSafePath } from '@process/utils';
+
+const DEFAULT_ZOOM_FACTOR = 1;
+const MIN_ZOOM_FACTOR = 0.8;
+const MAX_ZOOM_FACTOR = 1.3;
+
+const clampZoomFactor = (value: number): number => {
+  if (Number.isNaN(value) || !Number.isFinite(value)) {
+    return DEFAULT_ZOOM_FACTOR;
+  }
+  return Math.min(MAX_ZOOM_FACTOR, Math.max(MIN_ZOOM_FACTOR, Number(value.toFixed(2))));
+};
 
 export function initApplicationBridgeCore(): void {
   ipcBridge.application.systemInfo.provider(() => {
@@ -22,9 +32,6 @@ export function initApplicationBridgeCore(): void {
 
   ipcBridge.application.updateSystemInfo.provider(async ({ cacheDir, workDir }) => {
     try {
-      // Normalize paths: if the user picked a real path that matches a CLI-safe
-      // symlink target (e.g. macOS file picker resolves symlinks), restore the
-      // symlink path to avoid storing paths with spaces.
       const safeCacheDir = resolveCliSafePath(cacheDir, getConfigPath());
       const safeWorkDir = resolveCliSafePath(workDir, getDataPath());
 
@@ -41,7 +48,6 @@ export function initApplicationBridgeCore(): void {
   });
 
   ipcBridge.application.getPath.provider(({ name }) => {
-    // Resolve common paths without Electron
     const home = os.homedir();
     const map: Record<string, string> = {
       home,
@@ -49,5 +55,16 @@ export function initApplicationBridgeCore(): void {
       downloads: path.join(home, 'Downloads'),
     };
     return Promise.resolve(map[name] ?? home);
+  });
+
+  ipcBridge.application.getZoomFactor.provider(async () => {
+    const persisted = await ProcessConfig.get('ui.zoomFactor');
+    return clampZoomFactor(persisted ?? DEFAULT_ZOOM_FACTOR);
+  });
+
+  ipcBridge.application.setZoomFactor.provider(async ({ factor }) => {
+    const nextFactor = clampZoomFactor(factor);
+    await ProcessConfig.set('ui.zoomFactor', nextFactor);
+    return nextFactor;
   });
 }

@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ipcBridge } from '@/common';
 import { TEAM_MODE_ENABLED } from '@/common/config/constants';
 import { ConfigStorage, type ICssTheme } from '@/common/config/storage';
 import PwaPullToRefresh from '@/renderer/components/layout/PwaPullToRefresh';
@@ -12,10 +11,9 @@ import Titlebar from '@/renderer/components/layout/Titlebar';
 import { Layout as ArcoLayout } from '@arco-design/web-react';
 import { MenuFold, MenuUnfold } from '@icon-park/react';
 import classNames from 'classnames';
-import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutContext } from '@renderer/hooks/context/LayoutContext';
-import { NavigationHistoryProvider } from '@renderer/hooks/context/NavigationHistoryContext';
 import { useDeepLink } from '@renderer/hooks/system/useDeepLink';
 import { useNotificationClick } from '@renderer/hooks/system/useNotificationClick';
 import { useDirectorySelection } from '@renderer/hooks/file/useDirectorySelection';
@@ -23,41 +21,8 @@ import { useMultiAgentDetection } from '@renderer/hooks/agent/useMultiAgentDetec
 import { processCustomCss } from '@renderer/utils/theme/customCssProcessor';
 import { cleanupSiderTooltips } from '@renderer/utils/ui/siderTooltip';
 import { useConversationShortcuts } from '@renderer/hooks/ui/useConversationShortcuts';
-import { isElectronDesktop } from '@renderer/utils/platform';
 import { computeCssSyncDecision, resolveCssByActiveTheme } from '@renderer/utils/theme/themeCssSync';
 import '@renderer/styles/layout.css';
-
-const useDebug = () => {
-  const [count, setCount] = useState(0);
-  const timer = useRef<any>(null);
-  const onClick = () => {
-    const open = () => {
-      ipcBridge.application.openDevTools.invoke().catch((error) => {
-        console.error('Failed to open dev tools:', error);
-      });
-      setCount(0);
-    };
-    if (count >= 3) {
-      return open();
-    }
-    setCount((prev) => {
-      if (prev >= 2) {
-        open();
-        return 0;
-      }
-      return prev + 1;
-    });
-    clearTimeout(timer.current);
-    timer.current = setTimeout(() => {
-      clearTimeout(timer.current);
-      setCount(0);
-    }, 1000);
-  };
-
-  return { onClick };
-};
-
-const UpdateModal = React.lazy(() => import('@/renderer/components/settings/UpdateModal'));
 
 const DEFAULT_SIDER_WIDTH = 250;
 const DESKTOP_COLLAPSED_WIDTH = 64;
@@ -69,9 +34,6 @@ const MOBILE_SIDER_MAX_WIDTH = 420;
 
 const detectMobileViewportOrTouch = (): boolean => {
   if (typeof window === 'undefined') return false;
-  if (isElectronDesktop()) {
-    return window.innerWidth < 768;
-  }
   const width = window.innerWidth;
   const byWidth = width < 768;
   // 仅在小屏时才将 coarse/touch 视为移动端，避免触控笔记本被误判
@@ -92,8 +54,6 @@ const Layout: React.FC<{
     typeof window === 'undefined' ? 390 : window.innerWidth
   );
   const [customCss, setCustomCss] = useState<string>('');
-  const [shouldMountUpdateModal, setShouldMountUpdateModal] = useState(false);
-  const { onClick } = useDebug();
   const { contextHolder: multiAgentContextHolder } = useMultiAgentDetection();
   const { contextHolder: directorySelectionContextHolder } = useDirectorySelection();
   useDeepLink();
@@ -272,78 +232,6 @@ const Layout: React.FC<{
     cleanupSiderTooltips();
   }, [isMobile, collapsed, location.pathname, location.search, location.hash]);
 
-  // Bridge Main Process logs to F12 Console
-  useEffect(() => {
-    const unsubscribe = ipcBridge.application.logStream.on((entry) => {
-      const prefix = `%c[Main:${entry.tag}]%c ${entry.message}`;
-      const style = 'color:#7c3aed;font-weight:bold';
-      if (entry.level === 'error') {
-        console.error(prefix, style, 'color:inherit', ...(entry.data !== undefined ? [entry.data] : []));
-      } else if (entry.level === 'warn') {
-        console.warn(prefix, style, 'color:inherit', ...(entry.data !== undefined ? [entry.data] : []));
-      } else {
-        console.log(prefix, style, 'color:inherit', ...(entry.data !== undefined ? [entry.data] : []));
-      }
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // Handle tray events from main process / 处理来自主进程的托盘事件
-  useEffect(() => {
-    if (!isElectronDesktop()) return;
-
-    // Navigate to guid page when requested from tray / 托盘请求导航到 guid 页面
-    const handleNavigateToGuid = () => {
-      void navigate('/guid');
-    };
-
-    // Navigate to conversation when requested from tray / 托盘请求导航到对话页面
-    const handleNavigateToConversation = (event: CustomEvent<{ conversationId: string }>) => {
-      void navigate(`/conversation/${event.detail.conversationId}`);
-    };
-
-    // Open about dialog when requested from tray / 托盘请求打开关于对话框
-    const handleOpenAbout = () => {
-      // Navigate to settings/about page / 导航到设置/关于页面
-      void navigate('/settings/about');
-    };
-
-    // Handle pause all tasks request from tray / 托盘请求暂停所有任务
-    const handlePauseAllTasks = async () => {
-      const { ipcBridge } = await import('@/common');
-      const result = await ipcBridge.task.stopAll.invoke();
-      if (result?.success) {
-        // Navigate to settings page to show task status
-        void navigate('/settings/system');
-      }
-    };
-
-    // Handle check update request from tray / 托盘请求检查更新
-    // 1. Navigate to about page / 导航到关于页面
-    // 2. Trigger update modal check / 触发更新模态框检查
-    const handleCheckUpdate = () => {
-      void navigate('/settings/about');
-      // Trigger update modal after a short delay to ensure page is loaded
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('aionui-open-update-modal', { detail: { source: 'tray' } }));
-      }, 100);
-    };
-
-    // Listen for tray events / 监听托盘事件
-    window.addEventListener('tray:navigate-to-guid', handleNavigateToGuid as EventListener);
-    window.addEventListener('tray:navigate-to-conversation', handleNavigateToConversation as EventListener);
-    window.addEventListener('tray:open-about', handleOpenAbout as EventListener);
-    window.addEventListener('tray:pause-all-tasks', handlePauseAllTasks as EventListener);
-    window.addEventListener('tray:check-update', handleCheckUpdate as EventListener);
-
-    return () => {
-      window.removeEventListener('tray:navigate-to-guid', handleNavigateToGuid as EventListener);
-      window.removeEventListener('tray:navigate-to-conversation', handleNavigateToConversation as EventListener);
-      window.removeEventListener('tray:open-about', handleOpenAbout as EventListener);
-      window.removeEventListener('tray:pause-all-tasks', handlePauseAllTasks as EventListener);
-      window.removeEventListener('tray:check-update', handleCheckUpdate as EventListener);
-    };
-  }, [navigate]);
 
   const siderWidth = isMobile
     ? Math.max(
@@ -420,126 +308,120 @@ const Layout: React.FC<{
 
   return (
     <LayoutContext.Provider value={{ isMobile, siderCollapsed: collapsed, setSiderCollapsed: setCollapsed }}>
-      <NavigationHistoryProvider>
-        <div className='app-shell flex flex-col size-full min-h-0'>
-          <Titlebar workspaceAvailable={workspaceAvailable} />
-          {/* 移动端左侧边栏蒙板 / Mobile left sider backdrop */}
-          {isMobile && !collapsed && (
-            <div className='fixed inset-0 bg-black/30 z-90' onClick={() => setCollapsed(true)} aria-hidden='true' />
-          )}
+      <div className='app-shell flex flex-col size-full min-h-0'>
+        <Titlebar workspaceAvailable={workspaceAvailable} />
+        {/* 移动端左侧边栏蒙板 / Mobile left sider backdrop */}
+        {isMobile && !collapsed && (
+          <div className='fixed inset-0 bg-black/30 z-90' onClick={() => setCollapsed(true)} aria-hidden='true' />
+        )}
 
-          <ArcoLayout className={'size-full layout flex-1 min-h-0'}>
-            <ArcoLayout.Sider
-              collapsedWidth={isMobile ? 0 : 64}
-              collapsed={collapsed}
-              width={siderWidth}
-              className={classNames('!bg-2 layout-sider', {
-                collapsed: collapsed,
-              })}
-              style={siderStyle}
-            >
-              <ArcoLayout.Header
-                className={classNames(
-                  'flex items-center justify-start py-8px px-16px pl-20px gap-12px layout-sider-header',
-                  isMobile && 'layout-sider-header--mobile',
-                  {
-                    'cursor-pointer group ': collapsed,
-                  }
-                )}
-              >
-                <div
-                  className={classNames('bg-black shrink-0 size-40px relative rd-0.5rem', {
-                    '!size-24px': collapsed,
-                  })}
-                  onClick={onClick}
-                >
-                  <svg
-                    className={classNames('w-5.5 h-5.5 absolute inset-0 m-auto', {
-                      ' scale-140': !collapsed,
-                    })}
-                    viewBox='0 0 80 80'
-                    fill='none'
-                  >
-                    <path
-                      key='logo-path-1'
-                      d='M40 20 Q38 22 25 40 Q23 42 26 42 L30 42 Q32 40 40 30 Q48 40 50 42 L54 42 Q57 42 55 40 Q42 22 40 20'
-                      fill='white'
-                    ></path>
-                    <circle key='logo-circle' cx='40' cy='46' r='3' fill='white'></circle>
-                    <path
-                      key='logo-path-2'
-                      d='M18 50 Q40 70 62 50'
-                      stroke='white'
-                      strokeWidth='3.5'
-                      fill='none'
-                      strokeLinecap='round'
-                    ></path>
-                  </svg>
-                </div>
-                <div className='flex-1 text-20px text-1 collapsed-hidden font-bold'>AionUi</div>
-                {isMobile && !collapsed && (
-                  <button
-                    type='button'
-                    className='app-titlebar__button'
-                    onClick={() => setCollapsed(true)}
-                    aria-label='Collapse sidebar'
-                  >
-                    {collapsed ? (
-                      <MenuUnfold theme='outline' size='18' fill='currentColor' />
-                    ) : (
-                      <MenuFold theme='outline' size='18' fill='currentColor' />
-                    )}
-                  </button>
-                )}
-                {/* 侧栏折叠改由标题栏统一控制 / Sidebar folding handled by Titlebar toggle */}
-              </ArcoLayout.Header>
-              <ArcoLayout.Content className='pt-8px px-8px pb-0 layout-sider-content'>
-                {React.isValidElement(sider)
-                  ? React.cloneElement(sider, {
-                      onSessionClick: () => {
-                        cleanupSiderTooltips();
-                        if (isMobile) setCollapsed(true);
-                      },
-                      collapsed,
-                    } as any)
-                  : sider}
-              </ArcoLayout.Content>
-              {!isMobile && (
-                <div
-                  className='absolute top-0 h-full w-8px z-20 cursor-col-resize group'
-                  style={{ right: '-4px' }}
-                  onMouseDown={beginSiderResizeDrag}
-                  aria-hidden='true'
-                >
-                  <div className='absolute top-0 left-1/2 h-full w-1px -translate-x-1/2 bg-transparent group-hover:bg-[var(--color-border-2)] transition-colors duration-150' />
-                </div>
+        <ArcoLayout className={'size-full layout flex-1 min-h-0'}>
+          <ArcoLayout.Sider
+            collapsedWidth={isMobile ? 0 : 64}
+            collapsed={collapsed}
+            width={siderWidth}
+            className={classNames('!bg-2 layout-sider', {
+              collapsed: collapsed,
+            })}
+            style={siderStyle}
+          >
+            <ArcoLayout.Header
+              className={classNames(
+                'flex items-center justify-start py-8px px-16px pl-20px gap-12px layout-sider-header',
+                isMobile && 'layout-sider-header--mobile',
+                {
+                  'cursor-pointer group ': collapsed,
+                }
               )}
-            </ArcoLayout.Sider>
-
-            <ArcoLayout.Content
-              className={'bg-1 layout-content flex flex-col min-h-0'}
-              onClick={() => {
-                if (isMobile && !collapsed) setCollapsed(true);
-              }}
-              style={
-                isMobile
-                  ? {
-                      width: '100%',
-                    }
-                  : undefined
-              }
             >
-              <Outlet />
-              {multiAgentContextHolder}
-              {directorySelectionContextHolder}
-              <PwaPullToRefresh />
-              <Suspense fallback={null}>
-                <UpdateModal />
-              </Suspense>
+              <div
+                className={classNames('bg-black shrink-0 size-40px relative rd-0.5rem', {
+                  '!size-24px': collapsed,
+                })}
+              >
+                <svg
+                  className={classNames('w-5.5 h-5.5 absolute inset-0 m-auto', {
+                    ' scale-140': !collapsed,
+                  })}
+                  viewBox='0 0 80 80'
+                  fill='none'
+                >
+                  <path
+                    key='logo-path-1'
+                    d='M40 20 Q38 22 25 40 Q23 42 26 42 L30 42 Q32 40 40 30 Q48 40 50 42 L54 42 Q57 42 55 40 Q42 22 40 20'
+                    fill='white'
+                  ></path>
+                  <circle key='logo-circle' cx='40' cy='46' r='3' fill='white'></circle>
+                  <path
+                    key='logo-path-2'
+                    d='M18 50 Q40 70 62 50'
+                    stroke='white'
+                    strokeWidth='3.5'
+                    fill='none'
+                    strokeLinecap='round'
+                  ></path>
+                </svg>
+              </div>
+              <div className='flex-1 text-20px text-1 collapsed-hidden font-bold'>AionUi</div>
+              {isMobile && !collapsed && (
+                <button
+                  type='button'
+                  className='app-titlebar__button'
+                  onClick={() => setCollapsed(true)}
+                  aria-label='Collapse sidebar'
+                >
+                  {collapsed ? (
+                    <MenuUnfold theme='outline' size='18' fill='currentColor' />
+                  ) : (
+                    <MenuFold theme='outline' size='18' fill='currentColor' />
+                  )}
+                </button>
+              )}
+              {/* 侧栏折叠改由标题栏统一控制 / Sidebar folding handled by Titlebar toggle */}
+            </ArcoLayout.Header>
+            <ArcoLayout.Content className='pt-8px px-8px pb-0 layout-sider-content'>
+              {React.isValidElement(sider)
+                ? React.cloneElement(sider, {
+                    onSessionClick: () => {
+                      cleanupSiderTooltips();
+                      if (isMobile) setCollapsed(true);
+                    },
+                    collapsed,
+                  } as any)
+                : sider}
             </ArcoLayout.Content>
-          </ArcoLayout>
-        </div>
-      </NavigationHistoryProvider>
+            {!isMobile && (
+              <div
+                className='absolute top-0 h-full w-8px z-20 cursor-col-resize group'
+                style={{ right: '-4px' }}
+                onMouseDown={beginSiderResizeDrag}
+                aria-hidden='true'
+              >
+                <div className='absolute top-0 left-1/2 h-full w-1px -translate-x-1/2 bg-transparent group-hover:bg-[var(--color-border-2)] transition-colors duration-150' />
+              </div>
+            )}
+          </ArcoLayout.Sider>
+
+          <ArcoLayout.Content
+            className={'bg-1 layout-content flex flex-col min-h-0'}
+            onClick={() => {
+              if (isMobile && !collapsed) setCollapsed(true);
+            }}
+            style={
+              isMobile
+                ? {
+                    width: '100%',
+                  }
+                : undefined
+            }
+          >
+            <Outlet />
+            {multiAgentContextHolder}
+            {directorySelectionContextHolder}
+            <PwaPullToRefresh />
+          </ArcoLayout.Content>
+        </ArcoLayout>
+      </div>
     </LayoutContext.Provider>
   );
 };

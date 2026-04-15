@@ -8,8 +8,7 @@ import { Button, Dropdown, Menu, Message } from '@arco-design/web-react';
 import { Plus } from '@icon-park/react';
 import { useConversationContextSafe } from '@/renderer/hooks/context/ConversationContext';
 import { iconColors } from '@/renderer/styles/colors';
-import { isElectronDesktop } from '@/renderer/utils/platform';
-import { FileService } from '@/renderer/services/FileService';
+import { FileService, MAX_UPLOAD_SIZE_MB } from '@/renderer/services/FileService';
 import type { FileMetadata } from '@/renderer/services/FileService';
 import React, { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -24,9 +23,9 @@ interface FileAttachButtonProps {
 /**
  * Unified file-attach button for SendBox.
  *
- * - **Electron desktop**: Simple "+" button → opens native OS file dialog (same as before).
- * - **WebUI (desktop/mobile browser)**: "+" button with dropdown → choose between
- *   host machine files (server-side directory browser) or local device files (browser file picker).
+ * The WebUI-only runtime always exposes two file sources:
+ * - server/host files via the built-in directory browser
+ * - local device files via the browser file picker
  */
 const FileAttachButton: React.FC<FileAttachButtonProps> = ({ openFileSelector, onLocalFilesAdded }) => {
   const conversationContext = useConversationContextSafe();
@@ -45,7 +44,12 @@ const FileAttachButton: React.FC<FileAttachButtonProps> = ({ openFileSelector, o
           onLocalFilesAdded(processed);
         }
       } catch (err) {
-        Message.error(t('common.fileAttach.failed'));
+        const msg = err instanceof Error ? err.message : '';
+        if (msg === 'FILE_TOO_LARGE') {
+          Message.error(t('common.fileAttach.tooLarge', { max: MAX_UPLOAD_SIZE_MB }));
+        } else {
+          Message.error(t('common.fileAttach.failed'));
+        }
       } finally {
         setUploading(false);
       }
@@ -57,12 +61,6 @@ const FileAttachButton: React.FC<FileAttachButtonProps> = ({ openFileSelector, o
 
   const plusIcon = <Plus theme='outline' size='14' strokeWidth={2} fill={iconColors.primary} />;
 
-  // Electron desktop: simple button, no dropdown needed
-  if (isElectronDesktop()) {
-    return <Button type='secondary' shape='circle' icon={plusIcon} onClick={openFileSelector} />;
-  }
-
-  // WebUI: dropdown with two options
   const dropdownMenu = (
     <Menu
       onClickMenuItem={(key) => {

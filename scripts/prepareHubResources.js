@@ -4,7 +4,7 @@
  * Downloads the AionHub index.json and all extension zip packages
  * into resources/hub/ so they are bundled with the app as local fallback.
  *
- * Called during the build pipeline before electron-builder runs.
+ * Called during the standalone build pipeline before server assets are packaged.
  *
  * Environment variables:
  *   AIONUI_HUB_TAG    - Git tag to fetch from (default: 'dist-latest')

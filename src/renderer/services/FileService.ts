@@ -6,7 +6,10 @@
 
 import { ipcBridge } from '@/common';
 import { trackUpload, type UploadSource } from '@/renderer/hooks/file/useUploadState';
-import { isElectronDesktop } from '@/renderer/utils/platform';
+
+/** Max upload size in MB — keep in sync with server-side MAX_UPLOAD_SIZE in apiRoutes.ts */
+export const MAX_UPLOAD_SIZE_MB = 30;
+const MAX_UPLOAD_SIZE_BYTES = MAX_UPLOAD_SIZE_MB * 1024 * 1024;
 
 /**
  * Upload a file to the server via HTTP multipart (WebUI mode).
@@ -19,6 +22,9 @@ export async function uploadFileViaHttp(
   conversationId?: string,
   onProgress?: (percent: number) => void
 ): Promise<string> {
+  if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+    throw new Error('FILE_TOO_LARGE');
+  }
   const formData = new FormData();
   formData.append('file', file);
   if (conversationId) {
@@ -269,23 +275,11 @@ class FileServiceClass {
       // If no valid path (WebUI or some dragged files may not have paths), create temporary file
       if (!filePath) {
         try {
-          if (!isElectronDesktop()) {
-            // WebUI: upload via HTTP multipart to the conversation workspace uploads directory
-            const tracker = trackUpload(file.size, source);
-            try {
-              filePath = await uploadFileViaHttp(file, conversationId || '', tracker.onProgress);
-            } finally {
-              tracker.finish();
-            }
-          } else {
-            // Electron: use IPC to create upload file (respects saveToWorkspace setting)
-            const arrayBuffer = await file.arrayBuffer();
-            const uint8Array = new Uint8Array(arrayBuffer);
-            const uploadPath = await ipcBridge.fs.createUploadFile.invoke({ fileName: file.name, conversationId });
-            if (uploadPath) {
-              await ipcBridge.fs.writeFile.invoke({ path: uploadPath, data: uint8Array });
-              filePath = uploadPath;
-            }
+          const tracker = trackUpload(file.size, source);
+          try {
+            filePath = await uploadFileViaHttp(file, conversationId || '', tracker.onProgress);
+          } finally {
+            tracker.finish();
           }
         } catch (error) {
           // Re-throw size errors so caller can show user-facing toast

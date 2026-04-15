@@ -102,18 +102,18 @@ describe('renderer i18n localStorage guards', () => {
     await import('@/renderer/services/i18n');
     await Promise.resolve();
 
-    await mockOnLanguageChanged.handler?.({ language: 'ko-KR' });
+    await mockOnLanguageChanged.handler?.({ language: 'ja-JP' });
 
-    expect(mockI18n.changeLanguage).toHaveBeenCalledWith('ko-KR');
+    expect(mockI18n.changeLanguage).toHaveBeenCalledWith('ja-JP');
   });
 
   it('persists language through ConfigStorage even when localStorage is unavailable', async () => {
     const module = await import('@/renderer/services/i18n');
     await Promise.resolve();
 
-    await module.changeLanguage('tr');
+    await module.changeLanguage('ja');
 
-    expect(mockConfigStorageSet).toHaveBeenCalledWith('language', 'tr-TR');
-    expect(mockChangeLanguageInvoke).toHaveBeenCalledWith({ language: 'tr-TR' });
+    expect(mockConfigStorageSet).toHaveBeenCalledWith('language', 'ja-JP');
+    expect(mockChangeLanguageInvoke).toHaveBeenCalledWith({ language: 'ja-JP' });
   });
 });

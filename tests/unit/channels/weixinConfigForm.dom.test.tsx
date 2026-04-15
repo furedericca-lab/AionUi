@@ -31,22 +31,6 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-// Mock electronAPI
-const mockWeixinLoginStart = vi.fn();
-const mockWeixinLoginOnQR = vi.fn(() => vi.fn());
-const mockWeixinLoginOnScanned = vi.fn(() => vi.fn());
-const mockWeixinLoginOnDone = vi.fn(() => vi.fn());
-
-Object.defineProperty(window, 'electronAPI', {
-  value: {
-    weixinLoginStart: mockWeixinLoginStart,
-    weixinLoginOnQR: mockWeixinLoginOnQR,
-    weixinLoginOnScanned: mockWeixinLoginOnScanned,
-    weixinLoginOnDone: mockWeixinLoginOnDone,
-  },
-  writable: true,
-});
-
 // Mock channel IPC bridge
 vi.mock('@/common/adapter/ipcBridge', () => ({
   channel: {
@@ -120,15 +104,6 @@ describe('WeixinConfigForm', () => {
       value: MockEventSource,
       writable: true,
     });
-    window.electronAPI = {
-      weixinLoginStart: mockWeixinLoginStart,
-      weixinLoginOnQR: mockWeixinLoginOnQR,
-      weixinLoginOnScanned: mockWeixinLoginOnScanned,
-      weixinLoginOnDone: mockWeixinLoginOnDone,
-    } as typeof window.electronAPI;
-    mockWeixinLoginOnQR.mockReturnValue(vi.fn());
-    mockWeixinLoginOnScanned.mockReturnValue(vi.fn());
-    mockWeixinLoginOnDone.mockReturnValue(vi.fn());
   });
 
   it('renders login button in idle state', () => {
@@ -146,72 +121,8 @@ describe('WeixinConfigForm', () => {
     });
   });
 
-  it('shows loading state when login starts', async () => {
-    // weixinLoginStart never resolves in this test — stays in loading
-    mockWeixinLoginStart.mockReturnValue(new Promise(() => {}));
 
-    render(<WeixinConfigForm pluginStatus={null} modelSelection={noopModelSelection} onStatusChange={vi.fn()} />);
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Scan to Login'));
-    });
-
-    // Button should be loading/disabled
-    const btn = screen.getByRole('button', { name: /Scan to Login/i });
-    expect(btn).toBeTruthy();
-  });
-
-  it('displays QR image when qrcodeUrl is set', async () => {
-    let qrCallback: ((data: { qrcodeUrl: string }) => void) | null = null;
-    mockWeixinLoginOnQR.mockImplementation((cb: any) => {
-      qrCallback = cb;
-      return vi.fn();
-    });
-    mockWeixinLoginStart.mockReturnValue(new Promise(() => {}));
-
-    render(<WeixinConfigForm pluginStatus={null} modelSelection={noopModelSelection} onStatusChange={vi.fn()} />);
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Scan to Login'));
-    });
-
-    await act(async () => {
-      qrCallback?.({ qrcodeUrl: 'https://example.com/qr.png' });
-    });
-
-    const img = screen.getByRole('img');
-    expect((img as HTMLImageElement).src).toContain('qr.png');
-    expect(screen.getByText('Please scan the QR code with WeChat')).toBeTruthy();
-  });
-
-  it('shows scanned text when onScanned fires', async () => {
-    let qrCallback: ((data: { qrcodeUrl: string }) => void) | null = null;
-    let scannedCallback: (() => void) | null = null;
-
-    mockWeixinLoginOnQR.mockImplementation((cb: any) => {
-      qrCallback = cb;
-      return vi.fn();
-    });
-    mockWeixinLoginOnScanned.mockImplementation((cb: any) => {
-      scannedCallback = cb;
-      return vi.fn();
-    });
-    mockWeixinLoginStart.mockReturnValue(new Promise(() => {}));
-
-    render(<WeixinConfigForm pluginStatus={null} modelSelection={noopModelSelection} onStatusChange={vi.fn()} />);
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Scan to Login'));
-    });
-    await act(async () => {
-      qrCallback?.({ qrcodeUrl: 'https://example.com/qr.png' });
-    });
-    await act(async () => {
-      scannedCallback?.();
-    });
-
-    expect(screen.getByText('Scanned, waiting for confirmation...')).toBeTruthy();
-  });
 
   it('shows already-connected state when pluginStatus.hasToken is true', () => {
     const pluginStatus = {
@@ -262,7 +173,6 @@ describe('WeixinConfigForm', () => {
 
   it('uses the WebUI EventSource login flow when electron login bridge is unavailable', async () => {
     const onStatusChange = vi.fn();
-    window.electronAPI = {} as typeof window.electronAPI;
     mockGetPluginStatus.mockResolvedValueOnce({
       success: true,
       data: [{ id: 'weixin_default', type: 'weixin', enabled: true, hasToken: true, status: 'running' }],
@@ -305,7 +215,6 @@ describe('WeixinConfigForm', () => {
   });
 
   it('resets to idle when enableWeixinPlugin fails in WebUI mode', async () => {
-    window.electronAPI = {} as typeof window.electronAPI;
     mockEnablePlugin.mockResolvedValueOnce({ success: false, msg: 'Enable failed' });
 
     render(<WeixinConfigForm pluginStatus={null} modelSelection={noopModelSelection} onStatusChange={vi.fn()} />);
@@ -326,7 +235,6 @@ describe('WeixinConfigForm', () => {
   });
 
   it('resets to idle when SSE error event contains expired message', async () => {
-    window.electronAPI = {} as typeof window.electronAPI;
 
     render(<WeixinConfigForm pluginStatus={null} modelSelection={noopModelSelection} onStatusChange={vi.fn()} />);
 
@@ -351,7 +259,6 @@ describe('WeixinConfigForm', () => {
   });
 
   it('resets to idle when SSE error event contains non-expired message', async () => {
-    window.electronAPI = {} as typeof window.electronAPI;
 
     render(<WeixinConfigForm pluginStatus={null} modelSelection={noopModelSelection} onStatusChange={vi.fn()} />);
 
@@ -405,7 +312,6 @@ describe('WeixinConfigForm', () => {
   });
 
   it('closes EventSource on component unmount', async () => {
-    window.electronAPI = {} as typeof window.electronAPI;
 
     const { unmount } = render(
       <WeixinConfigForm pluginStatus={null} modelSelection={noopModelSelection} onStatusChange={vi.fn()} />

@@ -1,80 +1,42 @@
 # Architecture
 
-## Multi-Process Model
+## Runtime model
 
-AionUi is an Electron app with three types of processes:
+AionUi is now a **WebUI-only server product**.
 
-- **Main Process** (`src/process/`, `src/index.ts`) — application logic, database, IPC handling. No DOM APIs available.
-- **Renderer Process** (`src/renderer/`) — React UI. No Node.js APIs available.
-- **Worker Processes** (`src/process/worker/`) — background AI tasks (gemini, codex, acp workers).
+Supported runtime surfaces:
 
-Cross-process communication must go through the IPC bridge.
+- **Server runtime** (`src/server.ts`, `src/process/`) — Bun/Node entrypoint, business logic, bridge handlers, DB, channels, workers
+- **Renderer runtime** (`src/renderer/`) — React WebUI served by the server
+- **Worker runtime** (`src/process/worker/`) — background AI / protocol workers
 
-## IPC Communication
+There is no Electron main process, preload bridge, tray runtime, or desktop packaging path.
 
-- Preload script: `src/preload.ts` — exposes a secure `contextBridge` API to the renderer
-- Message type definitions: `src/renderer/messages/`
-- All IPC channels are typed; add new channels in both the preload and the messages directory
+Supported UI languages are intentionally limited to `zh-CN`, `en-US`, and `ja-JP`.
 
-## WebUI Server
+## Communication model
+
+- Renderer ↔ server uses the standalone bridge over HTTP/WebSocket
+- Server ↔ workers uses the fork protocol in `src/process/worker/WorkerProtocol.ts`
+- Authentication for browser sessions is handled by the webserver auth layer (JWT + cookies + CSRF)
+
+## Web server
 
 Located in `src/process/webserver/`.
 
-- Express + WebSocket for real-time communication
-- JWT authentication for remote access
-- Enables network clients to access the agent UI remotely (not just local Electron window)
+- Express + WebSocket
+- JWT authentication and QR login helpers
+- Static asset serving for `out/renderer/`
+- Channel / extension routes mounted in the same server runtime
 
-## Run Modes
+## Product entrypoint
 
-AionUi can run in four modes. The WebSocket channel is the browser-side equivalent of
-Electron IPC — both transports reach the same bridge handlers and services.
+`src/server.ts` is the **only** application entrypoint.
 
+Canonical production flow:
+
+```bash
+bun run build:renderer:web
+bun run build:server
+NODE_ENV=production ALLOW_REMOTE=true bun dist-server/server.mjs
 ```
-start / cli  (Electron desktop)
-┌─────────────────────────────────────────────────────┐
-│  Electron window          Browser (optional WebUI)  │
-│      │                          │                   │
-│      │ IPC                      │ WebSocket         │
-│      ▼                          ▼                   │
-│       bridge handlers / services / DB               │
-└─────────────────────────────────────────────────────┘
-
-webui  (Electron, no window)
-┌─────────────────────────────────────────────────────┐
-│  (no Electron window)     Browser                   │
-│                                  │                  │
-│                                  │ WebSocket        │
-│                                  ▼                  │
-│       bridge handlers / services / DB               │
-│       + full Electron API (fsBridge, cronBridge,    │
-│         mcpBridge, notificationBridge …)            │
-└─────────────────────────────────────────────────────┘
-
-server  (pure Node.js, no Electron)
-┌─────────────────────────────────────────────────────┐
-│  (no Electron window)     Browser                   │
-│                                  │                  │
-│                                  │ WebSocket        │
-│                                  ▼                  │
-│       bridge handlers / services / DB               │
-│       (10 Electron-only bridges unavailable:        │
-│        fsBridge, cronBridge, mcpBridge,             │
-│        dialogBridge, shellBridge, applicationBridge,│
-│        windowControlsBridge, updateBridge,          │
-│        webuiBridge, notificationBridge)             │
-└─────────────────────────────────────────────────────┘
-```
-
-Authentication flow (WebUI / server modes):
-
-1. `POST /login` → JWT token
-2. Connect WebSocket with token (verified on handshake)
-3. All bridge calls travel over the WebSocket connection
-
-## Cron System
-
-Located in `src/process/services/cron/`.
-
-- Based on `croner` library
-- `CronService`: task scheduling engine
-- `CronBusyGuard`: prevents concurrent execution of the same job

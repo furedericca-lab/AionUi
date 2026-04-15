@@ -2,7 +2,7 @@
 /**
  * Build builtin MCP server scripts as fully self-contained CJS bundles.
  *
- * electron-vite's externalizeDepsPlugin leaves all npm packages as require()
+ * The standalone server bundle leaves npm packages as require() in some worker paths
  * calls, which works for Electron's main process (ASAR virtual FS patches
  * require()) but fails when an external `node` process runs the script from
  * app.asar.unpacked — there is no ASAR support there.

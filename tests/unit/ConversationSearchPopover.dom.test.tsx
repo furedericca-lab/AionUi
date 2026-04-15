@@ -182,27 +182,8 @@ describe('ConversationSearchPopover', () => {
     expect(screen.getByPlaceholderText('conversation.historySearch.placeholder')).toHaveValue('');
   });
 
-  it('opens the modal on Cmd/Ctrl+Shift+F in desktop runtime', () => {
-    setElectronAPI({});
-
-    render(<ConversationSearchPopover />);
-
-    fireEvent.keyDown(document, { key: 'F', ctrlKey: true, shiftKey: true });
-
-    expect(screen.getByTestId('conversation-search-modal')).toBeInTheDocument();
-  });
-
-  it('ignores the shortcut outside desktop runtime', () => {
-    render(<ConversationSearchPopover />);
-
-    fireEvent.keyDown(document, { key: 'F', ctrlKey: true, shiftKey: true });
-
-    expect(screen.queryByTestId('conversation-search-modal')).not.toBeInTheDocument();
-  });
 
   it('ignores composing and already-handled shortcuts', () => {
-    setElectronAPI({});
-
     render(<ConversationSearchPopover />);
 
     const composingEvent = new KeyboardEvent('keydown', {

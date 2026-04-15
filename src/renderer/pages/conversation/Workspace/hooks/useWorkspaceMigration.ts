@@ -6,7 +6,6 @@
 
 import { ipcBridge } from '@/common';
 import { uuid } from '@/common/utils';
-import { isElectronDesktop } from '@/renderer/utils/platform';
 import { emitter } from '@/renderer/utils/emitter';
 import { useCronJobs } from '@/renderer/pages/cron/useCronJobs';
 import type { TFunction } from 'i18next';
@@ -66,24 +65,9 @@ export function useWorkspaceMigration({
     }
   }, []);
 
-  // Handle folder selection - use native dialog on Electron, modal on webui
   const handleSelectFolder = useCallback(async () => {
-    if (isElectronDesktop()) {
-      // Electron: use native file dialog
-      try {
-        const openFiles = await ipcBridge.dialog.showOpen.invoke({ properties: ['openDirectory'] });
-        if (openFiles && openFiles.length > 0) {
-          setSelectedTargetPath(openFiles[0]);
-        }
-      } catch (_error) {
-        console.error('Failed to open directory dialog:', _error);
-        messageApi.error(t('conversation.workspace.migration.selectFolderError'));
-      }
-    } else {
-      // WebUI: show directory selection modal
-      setShowDirectorySelector(true);
-    }
-  }, [messageApi, t]);
+    setShowDirectorySelector(true);
+  }, []);
 
   const executeMigration = useCallback(
     async (migrateCron: boolean) => {

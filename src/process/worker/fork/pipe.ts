@@ -18,6 +18,14 @@ const uuid = (len = 4) => {
 
 const callbackKey = (key: string) => key + '.callback';
 
+type ParentPortEvent = { data: unknown };
+type ProcessWithParentPort = NodeJS.Process & {
+  parentPort?: {
+    on(event: 'message', listener: (event: ParentPortEvent) => void): void;
+    postMessage?: (message: unknown) => void;
+  };
+};
+
 /* eslint-disable unicorn/no-thenable -- Deferred intentionally implements thenable interface */
 class Deferred {
   resolve: (data: any) => void;
@@ -67,6 +75,7 @@ export class Pipe {
   isClose = false;
   constructor(master = false) {
     if (!master) {
+      const parentPort = (process as ProcessWithParentPort).parentPort;
       // Handle message from main process
       const handleMessage = (msgData: any) => {
         const { type, data, pipeId } = msgData || {};
@@ -81,9 +90,9 @@ export class Pipe {
         }
       };
 
-      if (process.parentPort) {
+      if (parentPort) {
         // Electron utility process: message is wrapped in a MessageEvent
-        process.parentPort.on('message', (event) => {
+        parentPort.on('message', (event: ParentPortEvent) => {
           handleMessage(event.data);
         });
       } else {
@@ -137,9 +146,10 @@ export class Pipe {
       return;
     }
     const msg = { type: name, data: data, ...extPrams };
-    if (process.parentPort?.postMessage) {
+    const parentPort = (process as ProcessWithParentPort).parentPort;
+    if (parentPort?.postMessage) {
       // Electron utility process
-      process.parentPort.postMessage(msg);
+      parentPort.postMessage(msg);
     } else if (process.send) {
       // Node.js child_process.fork
       process.send(msg);

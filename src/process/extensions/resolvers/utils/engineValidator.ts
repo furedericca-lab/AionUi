@@ -69,17 +69,7 @@ function satisfiesVersion(version: string, range: string): boolean {
  * Falls back to '0.0.0' if not available.
  */
 function getAionUIVersion(): string {
-  // Prefer Electron runtime version when available (desktop / packaged mode).
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
-    const electron = require('electron') as { app?: { getVersion?: () => string } };
-    const appVersion = electron?.app?.getVersion?.();
-    if (appVersion) return appVersion;
-  } catch {
-    // Ignore: non-Electron contexts (unit tests, node scripts)
-  }
-
-  // Fallback to nearest package.json candidates in dev/build contexts.
+  // Resolve from nearest package.json candidates in dev/build contexts.
   const candidates = [
     path.resolve(process.cwd(), 'package.json'),
     path.resolve(__dirname, '../../package.json'),

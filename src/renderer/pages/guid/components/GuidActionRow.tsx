@@ -12,7 +12,6 @@ import type { AcpSessionConfigOption } from '@/common/types/acpTypes';
 import { useLayoutContext } from '@/renderer/hooks/context/LayoutContext';
 import { getCleanFileNames, FileService } from '@/renderer/services/FileService';
 import { iconColors } from '@/renderer/styles/colors';
-import { isElectronDesktop } from '@/renderer/utils/platform';
 import type { AcpBackend, AcpBackendConfig, AvailableAgent } from '../types';
 import PresetAgentTag, { type AgentSwitcherItem } from './PresetAgentTag';
 import { Button, Dropdown, Menu, Message, Tooltip } from '@arco-design/web-react';
@@ -125,7 +124,7 @@ const GuidActionRow: React.FC<GuidActionRowProps> = ({
 
   const permissionLabel = currentModeOption ? getModeDisplayLabel(currentModeOption) : t('agentMode.permission');
 
-  const isWebUI = !isElectronDesktop();
+  const isWebUI = true;
 
   const menuContent = (
     <Menu

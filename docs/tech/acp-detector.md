@@ -205,7 +205,7 @@ which <command>
 
 | 启动模式   | 入口文件                                    | 调用方式                              |
 | ---------- | ------------------------------------------- | ------------------------------------- |
-| Electron   | `src/index.ts`                              | `initializeAcpDetector()` (异步并行)  |
+| WebUI server | `src/server.ts`                           | `initBridgeStandalone()` 内异步调用 `acpDetector.initialize()` |
 | Standalone | `src/process/utils/initBridgeStandalone.ts` | `acpDetector.initialize()` (直接调用) |
 
 ## 消费者

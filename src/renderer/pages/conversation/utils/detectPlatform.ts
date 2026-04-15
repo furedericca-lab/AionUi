@@ -1,14 +1,9 @@
-import { isElectronDesktop } from '@/renderer/utils/platform';
-
 /**
  * Detect whether the current viewport is mobile-sized or touch-capable.
  * Returns `true` for narrow viewports or small touch-first screens.
  */
 export const detectMobileViewportOrTouch = (): boolean => {
   if (typeof window === 'undefined') return false;
-  if (isElectronDesktop()) {
-    return window.innerWidth < 768;
-  }
   const width = window.innerWidth;
   const byWidth = width < 768;
   const smallScreen = width < 1024;

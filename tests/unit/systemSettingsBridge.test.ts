@@ -124,13 +124,6 @@ describe('systemSettingsBridge', () => {
     });
   });
 
-  describe('getCloseToTray', () => {
-    it('should return false as default', async () => {
-      mockProcessConfig.get.mockResolvedValue(undefined);
-      const handler = providerMap.get('systemSettings.getCloseToTray');
-      expect(await handler!()).toBe(false);
-    });
-  });
 
   describe('getNotificationEnabled', () => {
     it('should return true as default', async () => {
@@ -145,6 +138,15 @@ describe('systemSettingsBridge', () => {
       mockProcessConfig.get.mockResolvedValue(undefined);
       const handler = providerMap.get('systemSettings.getCronNotificationEnabled');
       expect(await handler!()).toBe(false);
+    });
+  });
+
+
+  describe('getCommandQueueEnabled', () => {
+    it('should return true as default', async () => {
+      mockProcessConfig.get.mockResolvedValue(undefined);
+      const handler = providerMap.get('systemSettings.getCommandQueueEnabled');
+      expect(await handler!()).toBe(true);
     });
   });
 

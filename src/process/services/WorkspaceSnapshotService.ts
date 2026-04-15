@@ -399,6 +399,7 @@ export class WorkspaceSnapshotService {
       if (!stderr.includes('Permission denied') && !stderr.includes('unable to index file')) {
         throw error;
       }
+      await this.addFilesIndividually(workspacePath, gitArgs);
     }
     await execFileAsync(
       'git',
@@ -417,5 +418,42 @@ export class WorkspaceSnapshotService {
     );
 
     return gitdir;
+  }
+
+  private async addFilesIndividually(workspacePath: string, gitArgs: string[]): Promise<void> {
+    const files = await this.listWorkspaceFiles(workspacePath);
+
+    for (const file of files) {
+      try {
+        await execFileAsync('git', [...gitArgs, 'add', '--ignore-errors', '--', file], {
+          cwd: workspacePath,
+          maxBuffer: 10 * 1024 * 1024,
+        });
+      } catch (error) {
+        const stderr = (error as { stderr?: string }).stderr ?? '';
+        if (!stderr.includes('Permission denied') && !stderr.includes('unable to index file')) {
+          throw error;
+        }
+      }
+    }
+  }
+
+  private async listWorkspaceFiles(workspacePath: string, relativeDir = ''): Promise<string[]> {
+    const dirPath = relativeDir ? path.join(workspacePath, relativeDir) : workspacePath;
+    const entries = await fs.readdir(dirPath, { withFileTypes: true });
+    const files: string[] = [];
+
+    for (const entry of entries) {
+      if (entry.name === '.git') continue;
+
+      const relativePath = relativeDir ? path.join(relativeDir, entry.name) : entry.name;
+      if (entry.isDirectory()) {
+        files.push(...(await this.listWorkspaceFiles(workspacePath, relativePath)));
+      } else if (entry.isFile()) {
+        files.push(relativePath);
+      }
+    }
+
+    return files;
   }
 }

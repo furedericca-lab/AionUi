@@ -6,7 +6,6 @@
 
 import { ipcBridge } from '@/common';
 import type { SpeechToTextResult } from '@/common/types/speech';
-import { isElectronDesktop } from '@/renderer/utils/platform';
 
 const MAX_AUDIO_FILE_SIZE_MB = 30;
 const MAX_AUDIO_FILE_SIZE_BYTES = MAX_AUDIO_FILE_SIZE_MB * 1024 * 1024;
@@ -58,16 +57,6 @@ export async function transcribeAudioBlob(blob: Blob, languageHint?: string): Pr
 
   const mimeType = blob.type || 'audio/webm';
   const fileName = createAudioFileName(mimeType);
-
-  if (isElectronDesktop()) {
-    const audioBuffer = new Uint8Array(await blob.arrayBuffer());
-    return ipcBridge.speechToText.transcribe.invoke({
-      audioBuffer: Array.from(audioBuffer),
-      fileName,
-      languageHint,
-      mimeType,
-    });
-  }
 
   const formData = new FormData();
   formData.append('audio', blob, fileName);

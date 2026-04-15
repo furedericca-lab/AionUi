@@ -19,6 +19,8 @@ import { accessSync, existsSync, readdirSync } from 'fs';
 import os from 'os';
 import path from 'path';
 
+type ProcessWithResourcesPath = NodeJS.Process & { resourcesPath?: string };
+
 /** Enable ACP performance diagnostics via ACP_PERF=1 */
 const PERF_LOG = process.env.ACP_PERF === '1';
 
@@ -32,8 +34,9 @@ const PERF_LOG = process.env.ACP_PERF === '1';
  * the bun executable. Returns null if the directory doesn't exist.
  */
 export function getBundledBunDir(): string | null {
+  const resourcesPathFromProcess = (process as ProcessWithResourcesPath).resourcesPath;
   const resourcesPath = getPlatformServices().paths.isPackaged()
-    ? process.resourcesPath
+    ? resourcesPathFromProcess ?? path.join(process.cwd(), 'resources')
     : path.join(process.cwd(), 'resources');
   const platform = process.platform === 'win32' ? 'win32' : process.platform;
   const arch = process.arch;
@@ -790,22 +793,10 @@ export async function resolveToolInfo(name: string): Promise<{ toolPath: string 
 export async function logEnvironmentDiagnostics(): Promise<void> {
   try {
     const isWindows = process.platform === 'win32';
-    const isElectron = typeof process.versions.electron === 'string';
-
-    // Electron-specific values — only available in desktop mode
-    let appVersion = '(unknown)';
-    let mode = 'standalone';
-    let userDataPath: string | undefined;
-    let logFilePath: string | undefined;
-    if (isElectron) {
-      // Safe: guarded by the runtime check above
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { app } = require('electron') as typeof import('electron');
-      appVersion = app.getVersion();
-      mode = app.isPackaged ? 'production' : 'development';
-      userDataPath = app.getPath('userData');
-      logFilePath = app.getPath('logs');
-    }
+    const appVersion = process.env.npm_package_version || 'unknown';
+    const mode = process.env.NODE_ENV || 'standalone';
+    const userDataPath = process.env.DATA_DIR;
+    const logFilePath = process.env.LOGS_DIR;
 
     // Resolve CLI tools in parallel while collecting sync info
     const [nodeInfo, npmInfo, npxInfo, gitInfo] = await Promise.all([
@@ -831,10 +822,6 @@ export async function logEnvironmentDiagnostics(): Promise<void> {
       `${ENV_TAG}   OS       : ${process.platform} ${os.release()} (${process.arch})`,
     ];
 
-    if (isElectron) {
-      lines.push(`${ENV_TAG}   Electron : ${process.versions.electron}`);
-      lines.push(`${ENV_TAG}   Chromium : ${process.versions.chrome}`);
-    }
 
     lines.push(
       `${ENV_TAG}   Node     : ${process.version} (built-in)`,

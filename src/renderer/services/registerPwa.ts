@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { isElectronDesktop } from '@renderer/utils/platform';
-
 const SERVICE_WORKER_URL = './sw.js';
 const LOCALHOST_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
 
@@ -14,7 +12,7 @@ function isPwaRegistrationSupported(): boolean {
     return false;
   }
 
-  if (isElectronDesktop() || !('serviceWorker' in navigator)) {
+  if (!('serviceWorker' in navigator)) {
     return false;
   }
 

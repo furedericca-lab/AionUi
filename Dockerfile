@@ -1,39 +1,34 @@
-FROM node:20-slim AS builder
+FROM oven/bun:1 AS builder
 WORKDIR /app
 
-# Install bun
-RUN npm install -g bun
-
-# Install all dependencies (including devDeps for build)
 COPY package.json bun.lock ./
 COPY patches/ ./patches/
-RUN bun install --ignore-scripts
+RUN bun install --frozen-lockfile --ignore-scripts
 
-# Copy source
 COPY . .
+RUN bun run build:renderer:web && bun run build:server
 
-# Build renderer (no Electron needed) and server bundle
-RUN bun run build:renderer:web
-RUN node scripts/build-server.mjs
-
-# ---- Runtime image ----
-FROM oven/bun:latest AS runtime
+FROM oven/bun:1 AS runtime
 WORKDIR /app
 
-# Copy only build artifacts and production deps
+ENV NODE_ENV=production \
+    PORT=3000 \
+    ALLOW_REMOTE=true \
+    DATA_DIR=/data
+
+COPY package.json bun.lock ./
+COPY patches/ ./patches/
+RUN bun install --production --frozen-lockfile --ignore-scripts
+
 COPY --from=builder /app/dist-server ./dist-server
 COPY --from=builder /app/out/renderer ./out/renderer
-COPY package.json bun.lock ./
-COPY patches/ ./patches/
-RUN bun install --production --ignore-scripts
 
-ENV PORT=3000
-ENV NODE_ENV=production
-ENV ALLOW_REMOTE=true
-ENV DATA_DIR=/data
-
-# SQLite data volume — mount with: -v $(pwd)/data:/data
 VOLUME ["/data"]
 EXPOSE 3000
+
+USER bun
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD bun -e "(async () => { try { const port = process.env.PORT || '3000'; const res = await fetch('http://127.0.0.1:' + port + '/api/auth/status'); process.exit(res.ok ? 0 : 1); } catch { process.exit(1); } })()"
 
 CMD ["bun", "dist-server/server.mjs"]

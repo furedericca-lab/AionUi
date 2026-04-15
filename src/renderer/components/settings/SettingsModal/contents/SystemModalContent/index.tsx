@@ -5,13 +5,10 @@
  */
 
 import { ipcBridge } from '@/common';
-import type { IStartOnBootStatus } from '@/common/adapter/ipcBridge';
 import { ConfigStorage } from '@/common/config/storage';
 import LanguageSwitcher from '@/renderer/components/settings/LanguageSwitcher';
-import { AUTO_PREVIEW_OFFICE_FILES_SWR_KEY } from '@/renderer/hooks/system/useAutoPreviewOfficeFilesEnabled';
 import { COMMAND_QUEUE_ENABLED_SWR_KEY } from '@/renderer/hooks/system/useCommandQueueEnabled';
 import { iconColors } from '@/renderer/styles/colors';
-import { isElectronDesktop } from '@/renderer/utils/platform';
 import { Alert, Button, Collapse, Form, InputNumber, Message, Modal, Switch, Tooltip } from '@arco-design/web-react';
 import { FolderSearch } from '@icon-park/react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -19,7 +16,6 @@ import { useTranslation } from 'react-i18next';
 import useSWR, { mutate as mutateSWR } from 'swr';
 import AionScrollArea from '@/renderer/components/base/AionScrollArea';
 import { useSettingsViewMode } from '../../settingsViewContext';
-import DevSettings from './DevSettings';
 import DirInputItem from './DirInputItem';
 import PreferenceRow from './PreferenceRow';
 
@@ -31,7 +27,6 @@ import PreferenceRow from './PreferenceRow';
  */
 const SystemModalContent: React.FC = () => {
   const { t } = useTranslation();
-  const isDesktop = isElectronDesktop();
   const [form] = Form.useForm();
   const [modal, modalContextHolder] = Modal.useModal();
   const [error, setError] = useState<string | null>(null);
@@ -39,42 +34,13 @@ const SystemModalContent: React.FC = () => {
   const isPageMode = viewMode === 'page';
   const initializingRef = useRef(true);
 
-  const [startOnBoot, setStartOnBoot] = useState<IStartOnBootStatus>({
-    supported: false,
-    enabled: false,
-    isPackaged: false,
-    platform: 'web',
-  });
-  const [closeToTray, setCloseToTray] = useState(false);
   const [notificationEnabled, setNotificationEnabled] = useState(true);
   const [cronNotificationEnabled, setCronNotificationEnabled] = useState(false);
   const [promptTimeout, setPromptTimeout] = useState<number>(300);
   const [agentIdleTimeout, setAgentIdleTimeout] = useState<number>(5);
   const [saveUploadToWorkspace, setSaveUploadToWorkspace] = useState(false);
-  const [commandQueueEnabled, setCommandQueueEnabled] = useState(true);
   const [autoPreviewOfficeFiles, setAutoPreviewOfficeFiles] = useState(true);
-
-  useEffect(() => {
-    if (!isDesktop) {
-      return;
-    }
-
-    ipcBridge.application.getStartOnBootStatus
-      .invoke()
-      .then((result) => {
-        if (result.success && result.data) {
-          setStartOnBoot(result.data);
-        }
-      })
-      .catch(() => {});
-  }, [isDesktop]);
-
-  useEffect(() => {
-    ipcBridge.systemSettings.getCloseToTray
-      .invoke()
-      .then((enabled) => setCloseToTray(enabled))
-      .catch(() => {});
-  }, []);
+  const [commandQueueEnabled, setCommandQueueEnabled] = useState(true);
 
   useEffect(() => {
     ipcBridge.systemSettings.getNotificationEnabled
@@ -114,49 +80,18 @@ const SystemModalContent: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    ipcBridge.systemSettings.getCommandQueueEnabled
-      .invoke()
-      .then((enabled) => setCommandQueueEnabled(enabled))
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
     ipcBridge.systemSettings.getAutoPreviewOfficeFiles
       .invoke()
       .then((enabled) => setAutoPreviewOfficeFiles(enabled))
       .catch(() => {});
   }, []);
 
-  const handleCloseToTrayChange = useCallback((checked: boolean) => {
-    setCloseToTray(checked);
-    ipcBridge.systemSettings.setCloseToTray.invoke({ enabled: checked }).catch(() => {
-      setCloseToTray(!checked);
-    });
+  useEffect(() => {
+    ipcBridge.systemSettings.getCommandQueueEnabled
+      .invoke()
+      .then((enabled) => setCommandQueueEnabled(enabled))
+      .catch(() => {});
   }, []);
-
-  const handleStartOnBootChange = useCallback(
-    (checked: boolean) => {
-      const previousStatus = startOnBoot;
-      setStartOnBoot((prev) => ({ ...prev, enabled: checked }));
-
-      ipcBridge.application.setStartOnBoot
-        .invoke({ enabled: checked })
-        .then((result) => {
-          if (result.success && result.data) {
-            setStartOnBoot(result.data);
-            return;
-          }
-
-          setStartOnBoot(previousStatus);
-          Message.error(result.msg || t('settings.startOnBootUpdateFailed'));
-        })
-        .catch(() => {
-          setStartOnBoot(previousStatus);
-          Message.error(t('settings.startOnBootUpdateFailed'));
-        });
-    },
-    [startOnBoot, t]
-  );
 
   const handleNotificationEnabledChange = useCallback((checked: boolean) => {
     setNotificationEnabled(checked);
@@ -199,6 +134,13 @@ const SystemModalContent: React.FC = () => {
     });
   }, []);
 
+  const handleAutoPreviewOfficeFilesChange = useCallback((checked: boolean) => {
+    setAutoPreviewOfficeFiles(checked);
+    ipcBridge.systemSettings.setAutoPreviewOfficeFiles.invoke({ enabled: checked }).catch(() => {
+      setAutoPreviewOfficeFiles(!checked);
+    });
+  }, []);
+
   const handleCommandQueueEnabledChange = useCallback((checked: boolean) => {
     setCommandQueueEnabled(checked);
     void mutateSWR(COMMAND_QUEUE_ENABLED_SWR_KEY, checked, {
@@ -207,19 +149,6 @@ const SystemModalContent: React.FC = () => {
     ipcBridge.systemSettings.setCommandQueueEnabled.invoke({ enabled: checked }).catch(() => {
       setCommandQueueEnabled(!checked);
       void mutateSWR(COMMAND_QUEUE_ENABLED_SWR_KEY, !checked, {
-        revalidate: false,
-      });
-    });
-  }, []);
-
-  const handleAutoPreviewOfficeFilesChange = useCallback((checked: boolean) => {
-    setAutoPreviewOfficeFiles(checked);
-    void mutateSWR(AUTO_PREVIEW_OFFICE_FILES_SWR_KEY, checked, {
-      revalidate: false,
-    });
-    ipcBridge.systemSettings.setAutoPreviewOfficeFiles.invoke({ enabled: checked }).catch(() => {
-      setAutoPreviewOfficeFiles(!checked);
-      void mutateSWR(AUTO_PREVIEW_OFFICE_FILES_SWR_KEY, !checked, {
         revalidate: false,
       });
     });
@@ -241,19 +170,6 @@ const SystemModalContent: React.FC = () => {
 
   const preferenceItems = [
     { key: 'language', label: t('settings.language'), component: <LanguageSwitcher /> },
-    {
-      key: 'startOnBoot',
-      label: t('settings.startOnBoot'),
-      description: startOnBoot.supported ? t('settings.startOnBootDesc') : t('settings.startOnBootUnsupported'),
-      component: (
-        <Switch checked={startOnBoot.enabled} onChange={handleStartOnBootChange} disabled={!startOnBoot.supported} />
-      ),
-    },
-    {
-      key: 'closeToTray',
-      label: t('settings.closeToTray'),
-      component: <Switch checked={closeToTray} onChange={handleCloseToTrayChange} />,
-    },
     {
       key: 'promptTimeout',
       label: t('settings.promptTimeout'),
@@ -291,16 +207,16 @@ const SystemModalContent: React.FC = () => {
       component: <Switch checked={saveUploadToWorkspace} onChange={handleSaveUploadToWorkspaceChange} />,
     },
     {
-      key: 'commandQueueEnabled',
-      label: t('settings.commandQueueEnabled'),
-      description: t('settings.commandQueueEnabledDesc'),
-      component: <Switch checked={commandQueueEnabled} onChange={handleCommandQueueEnabledChange} />,
-    },
-    {
       key: 'autoPreviewOfficeFiles',
       label: t('settings.autoPreviewOfficeFiles'),
       description: t('settings.autoPreviewOfficeFilesDesc'),
       component: <Switch checked={autoPreviewOfficeFiles} onChange={handleAutoPreviewOfficeFilesChange} />,
+    },
+    {
+      key: 'commandQueueEnabled',
+      label: t('settings.commandQueueEnabled'),
+      description: t('settings.commandQueueEnabledDesc'),
+      component: <Switch checked={commandQueueEnabled} onChange={handleCommandQueueEnabledChange} />,
     },
   ];
 
@@ -330,7 +246,7 @@ const SystemModalContent: React.FC = () => {
         await saveDirConfigValidate({ cacheDir, workDir });
         const result = await ipcBridge.application.updateSystemInfo.invoke({ cacheDir, workDir });
         if (result.success) {
-          await ipcBridge.application.restart.invoke();
+          Message.success(t('common.saveSuccess', { defaultValue: 'Settings saved. Restart the server process to apply directory changes.' }));
         } else {
           setError(result.msg || 'Failed to update system info');
           form.setFieldValue('cacheDir', systemInfo.cacheDir);
@@ -436,8 +352,6 @@ const SystemModalContent: React.FC = () => {
             </Form>
           </div>
 
-          {/* Developer settings: DevTools + CDP (only visible in dev mode) */}
-          <DevSettings />
         </div>
       </AionScrollArea>
     </div>

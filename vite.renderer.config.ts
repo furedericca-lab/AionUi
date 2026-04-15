@@ -1,7 +1,6 @@
 /**
- * Standalone renderer build config — no Electron dependency.
+ * WebUI-only renderer build config.
  * Used by `bun run build:renderer:web` for server/container deployments.
- * Outputs to out/renderer/ (same location as electron-vite build).
  */
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
@@ -108,7 +107,6 @@ export default defineConfig({
     global: 'globalThis',
   },
   optimizeDeps: {
-    exclude: ['electron'],
     include: [
       'react',
       'react-dom',

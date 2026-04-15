@@ -285,7 +285,7 @@ export const useMinimapPanel = (conversationId?: string): UseMinimapPanelReturn 
       const isCmdOrCtrl = event.metaKey || event.ctrlKey;
       if (!isCmdOrCtrl || event.shiftKey || key !== 'f' || event.altKey) return;
       // Keep browser/native find behavior in WebUI; intercept only desktop runtime.
-      if (typeof window !== 'undefined' && !window.electronAPI) return;
+      return;
       event.preventDefault();
       openSearchPanel();
     };

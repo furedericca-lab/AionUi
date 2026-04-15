@@ -10,7 +10,6 @@ import { ConfigStorage } from '@/common/config/storage';
 import { usePasteService } from '@/renderer/hooks/file/usePasteService';
 import { uploadFileViaHttp } from '@/renderer/services/FileService';
 import { trackUpload } from '@/renderer/hooks/file/useUploadState';
-import { isElectronDesktop } from '@/renderer/utils/platform';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MessageApi, PasteConfirmState, SelectedNodeRef } from '../types';
 import { getTargetFolderPath } from '../utils/treeHelpers';
@@ -99,11 +98,6 @@ export function useWorkspacePaste(options: UseWorkspacePasteOptions) {
   }, [copyFilesIntoWorkspace, workspace]);
 
   const handleUploadDeviceFiles = useCallback(() => {
-    if (isElectronDesktop()) {
-      handleSelectHostFiles();
-      return;
-    }
-
     if (!fileInputRef.current) {
       const input = document.createElement('input');
       input.type = 'file';

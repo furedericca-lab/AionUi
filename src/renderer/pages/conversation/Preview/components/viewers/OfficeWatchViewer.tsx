@@ -5,8 +5,6 @@
  */
 
 import { ipcBridge } from '@/common';
-import WebviewHost from '@/renderer/components/media/WebviewHost';
-import { isElectronDesktop } from '@/renderer/utils/platform';
 import { Spin } from '@arco-design/web-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -110,11 +108,8 @@ const OfficeWatchViewer: React.FC<OfficeWatchViewerProps> = ({ docType, filePath
         // Small delay to ensure the watch HTTP server is fully ready for the webview
         await new Promise((r) => setTimeout(r, 300));
         if (!cancelled) {
-          let resolvedUrl = url;
-          if (!isElectronDesktop()) {
-            const port = new URL(url).port;
-            resolvedUrl = `${PROXY_PATH[docType]}/${port}/`;
-          }
+          const port = new URL(url).port;
+          const resolvedUrl = `${PROXY_PATH[docType]}/${port}/`;
           setWatchUrl(resolvedUrl);
           setLoading(false);
         }
@@ -164,11 +159,6 @@ const OfficeWatchViewer: React.FC<OfficeWatchViewerProps> = ({ docType, filePath
 
   if (!watchUrl) return null;
 
-  // Electron: use <webview> via WebviewHost for full Electron integration.
-  // Web server mode: use <iframe> since <webview> is Electron-only.
-  if (isElectronDesktop()) {
-    return <WebviewHost url={watchUrl} className='bg-bg-1' />;
-  }
   return <iframe src={watchUrl} className='w-full h-full border-0 bg-bg-1' title={IFRAME_TITLE[docType]} />;
 };
 

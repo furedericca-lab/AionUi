@@ -2,21 +2,9 @@ import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useLayoutContext } from '@/renderer/hooks/context/LayoutContext';
 import { SettingsViewModeProvider } from '@/renderer/components/settings/SettingsModal/settingsViewContext';
-import { isElectronDesktop, resolveExtensionAssetUrl } from '@/renderer/utils/platform';
+import { resolveExtensionAssetUrl } from '@/renderer/utils/platform';
 import { extensions as extensionsIpc, type IExtensionSettingsTab } from '@/common/adapter/ipcBridge';
-import {
-  Cat,
-  Communication,
-  Computer,
-  Earth,
-  Gemini,
-  Info,
-  Lightning,
-  LinkCloud,
-  Puzzle,
-  Robot,
-  System,
-} from '@icon-park/react';
+import { Computer, Earth, Gemini, Info, Lightning, LinkCloud, Puzzle, Robot, System } from '@icon-park/react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useExtI18n } from '@/renderer/hooks/system/useExtI18n';
@@ -33,7 +21,7 @@ type NavItem = { label: string; icon: React.ReactElement; path: string; id: stri
 
 type TranslateFn = (key: string, options?: { defaultValue?: string }) => string;
 
-export function getBuiltinSettingsNavItems(isDesktop: boolean, t: TranslateFn): NavItem[] {
+export function getBuiltinSettingsNavItems(t: TranslateFn): NavItem[] {
   const builtinMap: Record<string, NavItem> = {
     gemini: { id: 'gemini', label: t('settings.gemini'), icon: <Gemini theme='outline' size='16' />, path: 'gemini' },
     model: { id: 'model', label: t('settings.model'), icon: <LinkCloud theme='outline' size='16' />, path: 'model' },
@@ -64,10 +52,9 @@ export function getBuiltinSettingsNavItems(isDesktop: boolean, t: TranslateFn): 
     webui: {
       id: 'webui',
       label: t('settings.webui'),
-      icon: isDesktop ? <Earth theme='outline' size='16' /> : <Communication theme='outline' size='16' />,
+      icon: <Earth theme='outline' size='16' />,
       path: 'webui',
     },
-    pet: { id: 'pet', label: t('pet.desktopPet'), icon: <Cat theme='outline' size='16' />, path: 'pet' },
     system: { id: 'system', label: t('settings.system'), icon: <System theme='outline' size='16' />, path: 'system' },
     about: { id: 'about', label: t('settings.about'), icon: <Info theme='outline' size='16' />, path: 'about' },
   };
@@ -81,8 +68,6 @@ const SettingsPageWrapper: React.FC<SettingsPageWrapperProps> = ({ children, cla
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { t } = useTranslation();
-  const isDesktop = isElectronDesktop();
-
   const [extensionTabs, setExtensionTabs] = useState<IExtensionSettingsTab[]>([]);
 
   useEffect(() => {
@@ -95,7 +80,7 @@ const SettingsPageWrapper: React.FC<SettingsPageWrapperProps> = ({ children, cla
   const { resolveExtTabName } = useExtI18n();
 
   const menuItems = React.useMemo(() => {
-    const builtins = getBuiltinSettingsNavItems(isDesktop, t);
+    const builtins = getBuiltinSettingsNavItems(t);
 
     // Insert extension tabs before system (unanchored default) or at anchor position
     const result = [...builtins];
@@ -148,7 +133,7 @@ const SettingsPageWrapper: React.FC<SettingsPageWrapperProps> = ({ children, cla
     }
 
     return result;
-  }, [isDesktop, t, extensionTabs, resolveExtTabName]);
+  }, [t, extensionTabs, resolveExtTabName]);
 
   const containerClass = classNames(
     'settings-page-wrapper w-full min-h-full box-border overflow-y-auto',

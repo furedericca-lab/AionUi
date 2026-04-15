@@ -132,39 +132,18 @@ export function useWorkspaceDragImport({
         for (let i = 0; i < dataTransfer.files.length; i++) {
           const file = dataTransfer.files[i];
 
-          // 使用 Electron webUtils.getPathForFile API 获取文件/目录的绝对路径
-          // Use Electron webUtils.getPathForFile API to get absolute path for file/directory
-          let filePath: string | undefined;
-          if (window.electronAPI?.getPathForFile) {
-            try {
-              filePath = window.electronAPI.getPathForFile(file);
-            } catch (err) {
-              console.warn('[WorkspaceDragImport] getPathForFile failed:', err);
-            }
-          }
-
-          // 回退到 File.path 属性（旧版 Electron 或非 Electron 环境）
-          // Fallback to File.path property (older Electron or non-Electron)
-          if (!filePath) {
-            const electronFile = file as File & { path?: string };
-            filePath = electronFile.path;
-          }
+          const electronFile = file as File & { path?: string };
+          const filePath = electronFile.path;
 
           if (filePath) {
             const name = file.name || getBaseName(filePath);
             itemsWithPath.push({ path: filePath, name, kind: 'file' });
           } else {
-            // 没有 path 属性，可能是从浏览器拖拽或非 Electron 环境
-            // 检查是否是目录（通过 webkitGetAsEntry）
-            // No path property, might be from browser or non-Electron
-            // Check if it's a directory (via webkitGetAsEntry)
             const item = dataTransfer.items?.[i];
             const entry = item?.webkitGetAsEntry?.();
             if (entry?.isDirectory) {
-              // 目录但没有 path，无法处理
               console.warn('[WorkspaceDragImport] Directory without path property, cannot process:', entry.name);
             } else {
-              // 普通文件，需要创建临时文件
               filesWithoutPath.push(file);
             }
           }

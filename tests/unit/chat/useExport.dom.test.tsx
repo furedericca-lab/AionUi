@@ -36,10 +36,6 @@ vi.mock('@/common', () => ({
   },
 }));
 
-vi.mock('@/renderer/utils/platform', () => ({
-  isElectronDesktop: vi.fn(() => true),
-}));
-
 vi.mock('react-i18next', () => ({
   useTranslation: vi.fn(() => ({
     t: (key: string) => key,
@@ -106,7 +102,7 @@ describe('useExport', () => {
     });
   });
 
-  it('opens the desktop directory picker and updates the export path', async () => {
+  it('opens the WebUI directory selector and updates the export path', async () => {
     const { result } = renderHook(() =>
       useExport({
         conversations: [conversation as never],
@@ -123,10 +119,12 @@ describe('useExport', () => {
       await result.current.handleSelectExportFolder();
     });
 
-    expect(mockShowOpen).toHaveBeenCalledWith({
-      properties: ['openDirectory'],
-      defaultPath: '/Desktop',
+    expect(result.current.showExportDirectorySelector).toBe(true);
+
+    await act(async () => {
+      result.current.handleSelectExportDirectoryFromModal(['/picked']);
     });
+
     expect(result.current.exportTargetPath).toBe('/picked');
   });
 
@@ -263,7 +261,7 @@ describe('useExport', () => {
     expect(mockMessageWarning).toHaveBeenCalledWith('conversation.history.exportSelectFolder');
   });
 
-  it('shows an error when the export directory dialog fails', async () => {
+  it('keeps the target path empty until the user confirms a WebUI directory selection', async () => {
     mockShowOpen.mockRejectedValueOnce(new Error('dialog failed'));
 
     const { result } = renderHook(() =>
@@ -282,7 +280,8 @@ describe('useExport', () => {
       await result.current.handleSelectExportFolder();
     });
 
-    expect(mockMessageError).toHaveBeenCalledWith('conversation.history.exportFailed');
+    expect(result.current.showExportDirectorySelector).toBe(true);
+    expect(result.current.exportTargetPath).toBe('/Desktop');
   });
 
   it('shows an error when zip creation fails', async () => {

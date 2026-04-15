@@ -1,5 +1,4 @@
 import { ipcBridge } from '@/common';
-import { isElectronDesktop } from '@/renderer/utils/platform';
 import { isTemporaryWorkspace } from '@/renderer/utils/workspace/workspace';
 import { Command, Down, Folder, Terminal } from '@icon-park/react';
 import { Button, Dropdown, Tooltip } from '@arco-design/web-react';
@@ -27,6 +26,7 @@ const STORAGE_KEY = 'workspace-open-preference';
  * Remembers user's preferred tool
  */
 const WorkspaceOpenButton: React.FC<WorkspaceOpenButtonProps> = ({ workspacePath }) => {
+  return null;
   const { t } = useTranslation();
   const [vscodeInstalled, setVscodeInstalled] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -116,9 +116,7 @@ const WorkspaceOpenButton: React.FC<WorkspaceOpenButtonProps> = ({ workspacePath
     }
   }, [currentTool]);
 
-  // Don't render in WebUI/browser mode — shell tools open on the server with no visible feedback
-  // Don't render if workspace is temporary
-  if (!isElectronDesktop() || isTemporary) return null;
+  if (isTemporary) return null;
 
   const dropdownList = (
     <div className='workspace-open-dropdown p-4px'>

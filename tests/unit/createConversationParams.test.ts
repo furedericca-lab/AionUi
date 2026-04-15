@@ -39,7 +39,7 @@ describe('createConversationParams', () => {
     configGet.mockReset();
   });
 
-  it('uses the shared locale resolver for Turkish', async () => {
+  it('uses the shared locale resolver for Japanese', async () => {
     loadPresetAssistantResources.mockResolvedValue({
       rules: 'preset rules',
       skills: '',
@@ -66,13 +66,13 @@ describe('createConversationParams', () => {
         presetAgentType: 'gemini',
       },
       '/tmp/workspace',
-      'tr'
+      'ja'
     );
 
-    expect(resolveLocaleKey('tr')).toBe('tr-TR');
+    expect(resolveLocaleKey('ja')).toBe('ja-JP');
     expect(loadPresetAssistantResources).toHaveBeenCalledWith({
       customAgentId: 'builtin-cowork',
-      localeKey: 'tr-TR',
+      localeKey: 'ja-JP',
     });
     expect(params.extra.presetRules).toBe('preset rules');
     expect(params.extra.enabledSkills).toEqual(['moltbook']);

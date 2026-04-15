@@ -1,11 +1,10 @@
 {
   "referenceLanguage": "en-US",
   "fallbackLanguage": "en-US",
-  "supportedLanguages": ["zh-CN", "en-US", "ja-JP", "zh-TW", "ko-KR", "tr-TR", "ru-RU", "uk-UA"],
+  "supportedLanguages": ["zh-CN", "en-US", "ja-JP"],
   "modules": [
     "common",
     "agentMode",
-    "update",
     "login",
     "fileSelection",
     "preview",
@@ -21,7 +20,6 @@
     "starOffice",
     "guid",
     "agent",
-    "team",
-    "pet"
+    "team"
   ]
 }

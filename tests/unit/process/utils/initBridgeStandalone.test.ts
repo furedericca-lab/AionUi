@@ -27,6 +27,7 @@ const mocks = vi.hoisted(() => ({
   initStarOfficeBridge: vi.fn(),
   initSpeechToTextBridge: vi.fn(),
   initHubBridge: vi.fn(),
+  initWebuiBridge: vi.fn(),
   initializeDetector: vi.fn(async () => {}),
   loggerConfig: vi.fn(),
 }));
@@ -136,6 +137,9 @@ vi.mock('@process/bridge/speechToTextBridge', () => ({
 }));
 vi.mock('@process/bridge/hubBridge', () => ({
   initHubBridge: (...args: unknown[]) => mocks.initHubBridge(...args),
+}));
+vi.mock('@process/bridge/webuiBridge', () => ({
+  initWebuiBridge: (...args: unknown[]) => mocks.initWebuiBridge(...args),
 }));
 
 describe('initBridgeStandalone', () => {

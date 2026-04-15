@@ -78,12 +78,6 @@ export interface IConfigStorageRefer {
   colorScheme: string;
   /** Persisted app-wide UI zoom factor for Display settings */
   'ui.zoomFactor'?: number;
-  /** 桌面模式下是否自动启用 WebUI / Auto-enable WebUI in desktop mode */
-  'webui.desktop.enabled'?: boolean;
-  /** 桌面模式下是否允许远程访问 / Allow remote access in desktop mode */
-  'webui.desktop.allowRemote'?: boolean;
-  /** 桌面模式下 WebUI 端口 / WebUI port in desktop mode */
-  'webui.desktop.port'?: number;
   customCss: string; // 自定义 CSS 样式
   'css.themes': ICssTheme[]; // 自定义 CSS 主题列表 / Custom CSS themes list
   'css.activeThemeId': string; // 当前激活的主题 ID / Currently active theme ID
@@ -115,8 +109,6 @@ export interface IConfigStorageRefer {
   'migration.promptsI18nAdded'?: boolean;
   /** Migration flag: Electron desktop config has been imported to server config */
   'migration.electronConfigImported'?: boolean;
-  // 关闭窗口时最小化到系统托盘 / Minimize to system tray when closing window
-  'system.closeToTray'?: boolean;
   // 任务完成时显示系统通知 / Show system notification when task completes
   'system.notificationEnabled'?: boolean;
   // 定时任务完成时显示系统通知 / Show system notification when scheduled task completes
@@ -184,15 +176,6 @@ export interface IConfigStorageRefer {
   };
   // Skills Market: whether the aionui-skills builtin skill is enabled
   'skillsMarket.enabled'?: boolean;
-  // Desktop Pet: whether the desktop pet feature is enabled
-  'pet.enabled'?: boolean;
-  // Desktop Pet: size in pixels (200, 280, or 360)
-  'pet.size'?: number;
-  // Desktop Pet: do not disturb mode (pet stays idle, ignores AI events)
-  'pet.dnd'?: boolean;
-  // Desktop Pet: whether tool-call confirmations are routed to the pet's bubble
-  // (true) or remain in the main chat window (false). Default true.
-  'pet.confirmEnabled'?: boolean;
 }
 
 export interface IEnvStorageRefer {

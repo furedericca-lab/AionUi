@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import { useVisibleConversationIds } from '@/renderer/pages/conversation/GroupedHistory/hooks/useVisibleConversationIds';
-import { isElectronDesktop } from '@/renderer/utils/platform';
 
 type UseConversationShortcutsParams = {
   navigate: NavigateFunction;
@@ -41,10 +40,6 @@ export const useConversationShortcuts = ({ navigate }: UseConversationShortcutsP
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.isComposing) {
-        return;
-      }
-
-      if (!isElectronDesktop()) {
         return;
       }
 

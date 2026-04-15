@@ -6,7 +6,6 @@
 
 import { ipcBridge } from '@/common';
 import type { TChatConversation } from '@/common/config/storage';
-import { isElectronDesktop } from '@/renderer/utils/platform';
 import { Message } from '@arco-design/web-react';
 import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -117,25 +116,8 @@ export const useExport = ({
       return;
     }
 
-    if (!isElectronDesktop()) {
-      setShowExportDirectorySelector(true);
-      return;
-    }
-
-    try {
-      const desktopPath = exportTargetPath || (await getDesktopPath());
-      const folders = await ipcBridge.dialog.showOpen.invoke({
-        properties: ['openDirectory'],
-        defaultPath: desktopPath || undefined,
-      });
-      if (folders && folders.length > 0) {
-        setExportTargetPath(folders[0]);
-      }
-    } catch (error) {
-      console.error('Failed to open export directory dialog:', error);
-      Message.error(t('conversation.history.exportFailed'));
-    }
-  }, [exportModalLoading, exportTargetPath, getDesktopPath, t]);
+    setShowExportDirectorySelector(true);
+  }, [exportModalLoading]);
 
   const fetchConversationMessages = useCallback(async (conversationId: string) => {
     try {

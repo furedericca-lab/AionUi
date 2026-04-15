@@ -6,13 +6,13 @@
 
 import { ipcBridge } from '@/common';
 import type { FileMetadata } from './FileService';
-import { getFileExtension, uploadFileViaHttp } from './FileService';
+import { getFileExtension, uploadFileViaHttp, MAX_UPLOAD_SIZE_MB } from './FileService';
 import { trackUpload, type UploadSource } from '@/renderer/hooks/file/useUploadState';
-import { isElectronDesktop } from '@/renderer/utils/platform';
+
+const MAX_UPLOAD_SIZE_BYTES = MAX_UPLOAD_SIZE_MB * 1024 * 1024;
 
 /**
- * Create a temporary file in a platform-aware way.
- * Electron desktop uses IPC, WebUI uses HTTP API.
+ * Create a temporary file in the WebUI-only runtime via HTTP upload.
  */
 async function createTempFile(
   fileName: string,
@@ -21,14 +21,9 @@ async function createTempFile(
   conversationId?: string,
   source: UploadSource = 'sendbox'
 ): Promise<string | null> {
-  if (isElectronDesktop()) {
-    const tempPath = await ipcBridge.fs.createUploadFile.invoke({ fileName, conversationId });
-    if (tempPath) {
-      await ipcBridge.fs.writeFile.invoke({ path: tempPath, data });
-    }
-    return tempPath;
+  if (data.byteLength > MAX_UPLOAD_SIZE_BYTES) {
+    throw new Error('FILE_TOO_LARGE');
   }
-  // WebUI: upload via HTTP multipart
   const arrayBuf = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer;
   const blob = new Blob([arrayBuf], { type: contentType });
   const file = new File([blob], fileName, { type: contentType });

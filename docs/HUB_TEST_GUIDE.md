@@ -2,11 +2,11 @@
 
 ## 测试分层
 
-| 层级 | 名称             | 测什么              | 关注点         | 运行环境            |
-| ---- | ---------------- | ------------------- | -------------- | ------------------- |
-| L1   | Integration Test | 主进程安装链路      | 数据流转正确性 | 本地 + CI           |
-| L2   | E2E Test         | UI 交互流程         | 用户体验正确性 | 本地（需 Electron） |
-| L3   | Smoke Test       | 真实 Backend 连通性 | ACP 协议可用性 | 仅本地              |
+| 层级 | 名称             | 测什么              | 关注点         | 运行环境       |
+| ---- | ---------------- | ------------------- | -------------- | -------------- |
+| L1   | Integration Test | 主进程安装链路      | 数据流转正确性 | 本地 + CI      |
+| L2   | Manual UI Check  | WebUI 交互流程      | 用户体验正确性 | 本地（浏览器） |
+| L3   | Smoke Test       | 真实 Backend 连通性 | ACP 协议可用性 | 仅本地         |
 
 ---
 
@@ -50,11 +50,11 @@ bunx vitest run tests/integration/hub-install-flow.test.ts
 
 ---
 
-## L2 E2E Test
+## L2 Manual UI Check
 
-**文件**: `tests/e2e/specs/hub-backend-install.e2e.ts`
+> 旧的 Electron Playwright E2E 已移除。仓库当前只保留 WebUI-only 运行路径，因此 L2 先以浏览器手工回归为准，待新的浏览器 Playwright harness 落地后再恢复自动化。
 
-**测试的 UI 流程**:
+**建议的 UI 回归流程**:
 
 ```
 设置页 → Agent 页 → 本地 Agent Tab
@@ -77,13 +77,12 @@ bunx vitest run tests/integration/hub-install-flow.test.ts
 **运行**:
 
 ```bash
-# 需要 Electron 环境
-bun run test:e2e
-# 或单独运行
-bunx playwright test tests/e2e/specs/hub-backend-install.e2e.ts --config playwright.config.ts
+# 启动 WebUI-only 服务
+bun run build
+PORT=3100 NODE_ENV=production ALLOW_REMOTE=true bun dist-server/server.mjs
 ```
 
-> **注意**: L2 需要 Electron 二进制。如果 Electron 未安装，先运行 `node node_modules/electron/install.js`。
+然后在浏览器中访问 `http://127.0.0.1:3100`，按上面的路径手工验证。
 
 ---
 
@@ -162,11 +161,7 @@ ACP_SMOKE_REAL=1 bunx vitest run tests/integration/acp-smoke.test.ts
 
 ### 3. L2 — 验证 UI 流程
 
-启动 dev 环境，手动走一遍 UI 流程确认无误后，运行 E2E 测试：
-
-```bash
-bun run test:e2e
-```
+启动 WebUI-only 服务后，手动走一遍上述浏览器流程确认无误。
 
 ---
 

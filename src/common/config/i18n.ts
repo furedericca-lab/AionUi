@@ -31,14 +31,6 @@ export function normalizeLanguageCode(language: string): SupportedLanguage {
       return 'zh-CN';
     case 'ja':
       return 'ja-JP';
-    case 'ko':
-      return 'ko-KR';
-    case 'tr':
-      return 'tr-TR';
-    case 'ru':
-      return 'ru-RU';
-    case 'uk':
-      return 'uk-UA';
     default:
       return DEFAULT_LANGUAGE;
   }

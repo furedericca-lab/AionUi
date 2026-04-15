@@ -8,3 +8,15 @@ declare module 'cookie' {
 
   export function parse(cookieHeader: string, options?: CookieParseOptions): Record<string, string>;
 }
+
+declare global {
+  namespace NodeJS {
+    interface Process {
+      resourcesPath?: string;
+      parentPort?: {
+        on(event: 'message', listener: (event: { data: unknown }) => void): void;
+        postMessage?: (message: unknown) => void;
+      };
+    }
+  }
+}

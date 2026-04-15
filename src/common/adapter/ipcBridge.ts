@@ -6,22 +6,34 @@
 
 import type { IConfirmation } from '@/common/chat/chatLib';
 import { bridge } from '@office-ai/platform';
-import type { OpenDialogOptions } from 'electron';
 import type { McpSource } from '../../process/services/mcpServices/McpProtocol';
 import type { AcpBackend, AcpBackendAll, AcpModelInfo, PresetAgentType } from '../types/acpTypes';
 import type { SlashCommandItem } from '../chat/slash/types';
 import type { IMcpServer, IProvider, TChatConversation, TProviderWithModel, ICssTheme } from '../config/storage';
 import type { PreviewHistoryTarget, PreviewSnapshotInfo } from '../types/preview';
-import type {
-  UpdateCheckRequest,
-  UpdateCheckResult,
-  UpdateDownloadProgressEvent,
-  UpdateDownloadRequest,
-  UpdateDownloadResult,
-  AutoUpdateStatus,
-} from '../update/updateTypes';
 import type { ProtocolDetectionRequest, ProtocolDetectionResponse } from '../utils/protocolDetector';
 import type { SpeechToTextRequest, SpeechToTextResult } from '../types/speech';
+
+type OpenDialogFilter = {
+  name: string;
+  extensions: string[];
+};
+
+type OpenDialogProperty =
+  | 'openFile'
+  | 'openDirectory'
+  | 'multiSelections'
+  | 'showHiddenFiles'
+  | 'createDirectory'
+  | 'promptToCreate'
+  | 'noResolveAliases'
+  | 'treatPackageAsDirectory'
+  | 'dontAddToRecent';
+
+type OpenDialogOptions = {
+  properties?: OpenDialogProperty[];
+  filters?: OpenDialogFilter[];
+};
 
 export const shell = {
   openFile: bridge.buildProvider<void, string>('open-file'), // 使用系统默认程序打开文件
@@ -164,44 +176,12 @@ export const application = {
   // CDP (Chrome DevTools Protocol) management
   getCdpStatus: bridge.buildProvider<IBridgeResponse<ICdpStatus>, void>('app.get-cdp-status'), // 获取 CDP 状态
   updateCdpConfig: bridge.buildProvider<IBridgeResponse<ICdpConfig>, Partial<ICdpConfig>>('app.update-cdp-config'), // 更新 CDP 配置
-  // Start on boot management
-  getStartOnBootStatus: bridge.buildProvider<IBridgeResponse<IStartOnBootStatus>, void>('app.get-start-on-boot-status'), // 获取开机启动状态
-  setStartOnBoot: bridge.buildProvider<IBridgeResponse<IStartOnBootStatus>, { enabled: boolean }>(
-    'app.set-start-on-boot'
-  ), // 设置开机启动
   // Bridge Main Process logs to Renderer F12 Console
   logStream: bridge.buildEmitter<{ level: 'log' | 'warn' | 'error'; tag: string; message: string; data?: unknown }>(
     'app.log-stream'
   ),
   // DevTools state change notification
   devToolsStateChanged: bridge.buildEmitter<{ isOpen: boolean }>('app.devtools-state-changed'),
-};
-
-// Manual (opt-in) updates via GitHub Releases
-export const update = {
-  /** Ask the renderer to open the update UI (e.g. from app menu). */
-  open: bridge.buildEmitter<{ source?: 'menu' | 'about' }>('update.open'),
-  /** Check GitHub releases and return latest version info. */
-  check: bridge.buildProvider<IBridgeResponse<UpdateCheckResult>, UpdateCheckRequest>('update.check'),
-  /** Download a chosen release asset (explicit user action). */
-  download: bridge.buildProvider<IBridgeResponse<UpdateDownloadResult>, UpdateDownloadRequest>('update.download'),
-  /** Download progress events emitted by main process. */
-  downloadProgress: bridge.buildEmitter<UpdateDownloadProgressEvent>('update.download.progress'),
-};
-
-// Auto-updater (electron-updater) API
-export const autoUpdate = {
-  /** Check for updates using electron-updater */
-  check: bridge.buildProvider<
-    IBridgeResponse<{ updateInfo?: { version: string; releaseDate?: string; releaseNotes?: string } }>,
-    { includePrerelease?: boolean }
-  >('auto-update.check'),
-  /** Download update using electron-updater */
-  download: bridge.buildProvider<IBridgeResponse, void>('auto-update.download'),
-  /** Quit and install the downloaded update */
-  quitAndInstall: bridge.buildProvider<void, void>('auto-update.quit-and-install'),
-  /** Auto-update status events */
-  status: bridge.buildEmitter<AutoUpdateStatus>('auto-update.status'),
 };
 
 export const starOffice = {
@@ -691,20 +671,8 @@ export const deepLink = {
   }>('deep-link.received'),
 };
 
-// 窗口控制相关接口 / Window controls API
-export const windowControls = {
-  minimize: bridge.buildProvider<void, void>('window-controls:minimize'),
-  maximize: bridge.buildProvider<void, void>('window-controls:maximize'),
-  unmaximize: bridge.buildProvider<void, void>('window-controls:unmaximize'),
-  close: bridge.buildProvider<void, void>('window-controls:close'),
-  isMaximized: bridge.buildProvider<boolean, void>('window-controls:is-maximized'),
-  maximizedChanged: bridge.buildEmitter<{ isMaximized: boolean }>('window-controls:maximized-changed'),
-};
-
 // 系统设置接口 / System settings API
 export const systemSettings = {
-  getCloseToTray: bridge.buildProvider<boolean, void>('system-settings:get-close-to-tray'),
-  setCloseToTray: bridge.buildProvider<void, { enabled: boolean }>('system-settings:set-close-to-tray'),
   getNotificationEnabled: bridge.buildProvider<boolean, void>('system-settings:get-notification-enabled'),
   setNotificationEnabled: bridge.buildProvider<void, { enabled: boolean }>('system-settings:set-notification-enabled'),
   getCronNotificationEnabled: bridge.buildProvider<boolean, void>('system-settings:get-cron-notification-enabled'),
@@ -724,15 +692,6 @@ export const systemSettings = {
   setAutoPreviewOfficeFiles: bridge.buildProvider<void, { enabled: boolean }>(
     'system-settings:set-auto-preview-office-files'
   ),
-  // Desktop pet settings
-  getPetEnabled: bridge.buildProvider<boolean, void>('system-settings:get-pet-enabled'),
-  setPetEnabled: bridge.buildProvider<void, { enabled: boolean }>('system-settings:set-pet-enabled'),
-  getPetSize: bridge.buildProvider<number, void>('system-settings:get-pet-size'),
-  setPetSize: bridge.buildProvider<void, { size: number }>('system-settings:set-pet-size'),
-  getPetDnd: bridge.buildProvider<boolean, void>('system-settings:get-pet-dnd'),
-  setPetDnd: bridge.buildProvider<void, { dnd: boolean }>('system-settings:set-pet-dnd'),
-  getPetConfirmEnabled: bridge.buildProvider<boolean, void>('system-settings:get-pet-confirm-enabled'),
-  setPetConfirmEnabled: bridge.buildProvider<void, { enabled: boolean }>('system-settings:set-pet-confirm-enabled'),
   getCommandQueueEnabled: bridge.buildProvider<boolean, void>('system-settings:get-command-queue-enabled'),
   setCommandQueueEnabled: bridge.buildProvider<void, { enabled: boolean }>('system-settings:set-command-queue-enabled'),
 };

@@ -58,17 +58,6 @@
   "historyBack": "后退",
   "more": "更多",
   "refresh": "刷新",
-  "tray.showWindow": "显示 AionUi",
-  "tray.newChat": "新建对话",
-  "tray.closeToTray": "隐藏到托盘",
-  "tray.about": "关于 AionUi",
-  "tray.restart": "重启应用",
-  "tray.quit": "退出",
-  "tray.runningTasks": "运行中的任务",
-  "tray.pauseAll": "暂停所有任务",
-  "tray.checkUpdate": "检查更新",
-  "tray.recentChats": "最近对话",
-  "tray.untitled": "未命名",
   "fileAttach.hostFiles": "服务器文件",
   "fileAttach.myDevice": "我的设备",
   "fileAttach.failed": "上传失败",
@@ -83,5 +72,10 @@
   "import": "导入",
   "processing": "处理中...",
   "optional": "（可选）",
-  "clear": "清除"
+  "clear": "清除",
+  "unit": {
+    "minute_short": "m",
+    "second_short": "s"
+  },
+  "fileAttach.tooLarge": "File is too large (max {{max}} MB)"
 }

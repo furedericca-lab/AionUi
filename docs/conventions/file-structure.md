@@ -1,6 +1,6 @@
 # File & Directory Structure
 
-Rules for organizing files and directories across the entire Electron project.
+Rules for organizing files and directories across the entire WebUI-only server project.
 
 ## Repository Root
 
@@ -8,7 +8,7 @@ Rules for organizing files and directories across the entire Electron project.
 
 - **README translations** belong in `docs/readme/`, not at root. Only the main `readme.md` stays at root (GitHub convention)
 - **Guide documents** (`*_GUIDE.md`, `CODE_STYLE.md`, etc.) belong in `docs/`
-- **Config files** (`tsconfig.json`, `package.json`, etc.) stay at root — Node.js/Electron ecosystem convention
+- **Config files** (`tsconfig.json`, `package.json`, etc.) stay at root — Node.js ecosystem convention
 - **New documentation** should be created in `docs/`, not at project root
 
 ### Current Root Cleanup Targets
@@ -20,15 +20,15 @@ Rules for organizing files and directories across the entire Electron project.
 
 ## Project Layout (`src/`)
 
-AionUi is a multi-process Electron app with three core layers: **renderer**, **main process**, and **preload/shared**.
+AionUi is a WebUI-only server product with three core layers: **renderer**, **server**, and **shared**.
 
 ### Target Structure
 
 ```
 src/
 ├── renderer/          # Renderer layer — React UI, no Node.js APIs
-├── process/           # Main process layer — all Node.js / Electron business
-│   ├── bridge/        #   IPC handlers
+├── process/           # Server layer — backend, workers, channels, and bridge providers
+│   ├── bridge/        #   Standalone bridge providers
 │   ├── services/      #   Business logic
 │   ├── database/      #   SQLite
 │   ├── task/          #   Agent/task management
@@ -37,15 +37,14 @@ src/
 │   ├── extensions/    #   Plugin system
 │   ├── webserver/     #   WebUI server
 │   ├── worker/        #   Background workers (fork)
-│   └── i18n/          #   Main-process i18n
-├── common/            # Shared layer — cross-process types, adapters, utilities
-├── preload.ts         # IPC bridge — contextBridge between main ↔ renderer
-└── index.ts           # Main process entry point
+│   └── i18n/          #   Server-side i18n
+├── common/            # Shared layer — cross-runtime types, adapters, utilities
+└── server.ts          # Sole runtime entry point
 ```
 
 ### Current Structure
 
-All main-process modules now live under `src/process/`. The `src/` root contains only the three core layers (`renderer/`, `process/`, `common/`), the entry files (`index.ts`, `preload.ts`), and the ambient type declaration (`types.d.ts`).
+All backend modules now live under `src/process/`. The `src/` root contains only the three core layers (`renderer/`, `process/`, `common/`), the standalone entry file (`server.ts`), and the ambient type declaration (`types.d.ts`).
 
 ## Directory Naming — Two Conventions by Process
 
@@ -108,16 +107,16 @@ src/process/channels/plugins/dingtalk/  # lowercase
 
 **Violating these causes runtime crashes.**
 
-| Process                            | Can use                       | Cannot use                       |
-| ---------------------------------- | ----------------------------- | -------------------------------- |
-| **Main** (`src/process/`)          | Node.js, Electron main APIs   | DOM APIs, React                  |
-| **Renderer** (`src/renderer/`)     | DOM APIs, React, browser APIs | Node.js APIs, Electron main APIs |
-| **Worker** (`src/process/worker/`) | Node.js APIs                  | DOM APIs, Electron APIs          |
+| Process                            | Can use                       | Cannot use                      |
+| ---------------------------------- | ----------------------------- | ------------------------------- |
+| **Server** (`src/process/`)        | Node.js, filesystem, network  | DOM APIs, React                 |
+| **Renderer** (`src/renderer/`)     | DOM APIs, React, browser APIs | Node.js APIs / server-only APIs |
+| **Worker** (`src/process/worker/`) | Node.js APIs                  | DOM APIs                        |
 
-Cross-process communication MUST go through:
+Runtime communication MUST go through:
 
-- Main ↔ Renderer: IPC via `src/preload.ts` + `src/process/bridge/*.ts`
-- Main ↔ Worker: fork protocol via `src/process/worker/WorkerProtocol.ts`
+- Renderer ↔ Server: standalone bridge over HTTP/WebSocket
+- Server ↔ Worker: fork protocol via `src/process/worker/WorkerProtocol.ts`
 
 ## Main Process Naming
 

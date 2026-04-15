@@ -24,7 +24,6 @@ import type { GeminiAgentManager } from '../task/GeminiAgentManager';
 import { AionrsApprovalStore, type AionrsManager } from '../task/AionrsManager';
 import type OpenClawAgentManager from '../task/OpenClawAgentManager';
 import { prepareFirstMessage } from '../task/agentUtils';
-import { refreshTrayMenu } from '@process/utils/tray';
 import { copyFilesToDirectory, readDirectoryRecursive } from '@process/utils';
 import { computeOpenClawIdentityHash } from '@process/utils/openclawUtils';
 import fs from 'fs';
@@ -32,12 +31,8 @@ import path from 'path';
 import { migrateConversationToDatabase } from './migrationUtils';
 import { ConversationSideQuestionService } from './services/ConversationSideQuestionService';
 
-const refreshTrayMenuSafely = async (): Promise<void> => {
-  try {
-    await refreshTrayMenu();
-  } catch (error) {
-    console.warn('[conversationBridge] Failed to refresh tray menu:', error);
-  }
+const refreshConversationSurface = async (): Promise<void> => {
+  return Promise.resolve();
 };
 
 const VALID_CONVERSATION_TYPES = new Set<TChatConversation['type']>([
@@ -139,7 +134,7 @@ export function initConversationBridge(
         source: 'aionui',
       } as CreateConversationParams);
       emitConversationListChanged(conversation, 'created');
-      await refreshTrayMenuSafely();
+      await refreshConversationSurface();
       return conversation;
     } catch (error) {
       console.error('[conversationBridge] Failed to create conversation:', error);
@@ -227,7 +222,7 @@ export function initConversationBridge(
         if (sourceConversationId) {
           emitConversationListChanged({ id: sourceConversationId, source: conversation.source }, 'deleted');
         }
-        await refreshTrayMenuSafely();
+        await refreshConversationSurface();
         return result;
       } catch (error) {
         console.error('[conversationBridge] Failed to create conversation with conversation:', error);
@@ -266,7 +261,7 @@ export function initConversationBridge(
       if (conversation) {
         emitConversationListChanged(conversation, 'deleted');
       }
-      await refreshTrayMenuSafely();
+      await refreshConversationSurface();
       return true;
     } catch (error) {
       console.error('[conversationBridge] Failed to remove conversation:', error);
@@ -300,7 +295,7 @@ export function initConversationBridge(
         }
 
         if ('name' in updates) {
-          await refreshTrayMenuSafely();
+          await refreshConversationSurface();
         }
 
         return true;
@@ -469,14 +464,6 @@ export function initConversationBridge(
   // 通用 sendMessage 实现 - 统一调用 IAgentManager.sendMessage
   // Generic sendMessage - dispatches via IAgentManager.sendMessage interface
   ipcBridge.conversation.sendMessage.provider(async (params) => {
-    // Notify pet of user sending message (pre-emptive thinking)
-    try {
-      const { getEventBridge } = await import('../pet/petManager');
-      getEventBridge()?.handleUserSendMessage();
-    } catch {
-      /* pet not initialized */
-    }
-
     if (!params) {
       return { success: false, msg: 'Missing request parameters' };
     }

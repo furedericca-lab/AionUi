@@ -36,6 +36,7 @@ import { initStarOfficeBridge } from '@process/bridge/starOfficeBridge';
 import { initApplicationBridgeCore } from '@process/bridge/applicationBridgeCore';
 import { initShellBridgeStandalone } from '@process/bridge/shellBridgeStandalone';
 import { initCronBridge } from '@process/bridge/cronBridge';
+import { initWebuiBridge } from '@process/bridge/webuiBridge';
 import { initFsBridge } from '@process/bridge/fsBridge';
 import { initMcpBridge } from '@process/bridge/mcpBridge';
 import { initNotificationBridge } from '@process/bridge/notificationBridge';
@@ -80,6 +81,7 @@ export async function initBridgeStandalone(): Promise<void> {
   initStarOfficeBridge();
   initSpeechToTextBridge();
   initHubBridge();
+  initWebuiBridge();
 
   // Initialize ACP detector to scan for installed CLI agents (claude, codex, etc.)
   // Must mirror Electron's initializeAcpDetector() call in src/index.ts

@@ -17,13 +17,16 @@ import { ProcessConfig } from '@process/utils/initStorage';
 import path from 'path';
 import fs from 'fs';
 
+type ProcessWithResourcesPath = NodeJS.Process & { resourcesPath?: string };
+
 /**
  * Get app icon path for notifications
  */
 const getNotificationIcon = (): string | undefined => {
   try {
+    const resourcesPathFromProcess = (process as ProcessWithResourcesPath).resourcesPath;
     const resourcesPath = getPlatformServices().paths.isPackaged()
-      ? process.resourcesPath
+      ? resourcesPathFromProcess ?? path.join(process.cwd(), 'resources')
       : path.join(process.cwd(), 'resources');
     const iconPath = path.join(resourcesPath, 'app.png');
     if (fs.existsSync(iconPath)) {

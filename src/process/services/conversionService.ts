@@ -7,8 +7,6 @@
 import type { ConversionResult, ExcelWorkbookData, PPTJsonData } from '@/common/types/conversion';
 import { DOMParser } from '@xmldom/xmldom';
 import { Document as DocxDocument, Packer, Paragraph, TextRun } from 'docx';
-import type { BrowserWindow } from 'electron';
-import { electronBrowserWindow as BrowserWindowCtor } from '@/common/electronSafe';
 import fs from 'fs/promises';
 import mammoth from 'mammoth';
 import PPTX2Json from 'pptx2json';
@@ -548,62 +546,14 @@ class ConversionService {
   /**
    * HTML -> PDF
    * 将 HTML 转换为 PDF
-   * Uses a hidden BrowserWindow to render and print
-   * 使用隐藏的 BrowserWindow 进行渲染和打印
    */
   public async htmlToPdf(html: string, targetPath: string): Promise<ConversionResult<void>> {
-    if (!BrowserWindowCtor) {
-      return {
-        success: false,
-        error: 'PDF export is not available in standalone mode',
-      };
-    }
-    let win: BrowserWindow | null = null;
-    try {
-      win = new BrowserWindowCtor({
-        show: false,
-        webPreferences: {
-          nodeIntegration: false,
-          contextIsolation: true,
-        },
-      });
-
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="UTF-8">
-          <style>
-            body { font-family: system-ui, sans-serif; padding: 20px; }
-            img { max-width: 100%; }
-          </style>
-        </head>
-        <body>
-          ${html}
-        </body>
-        </html>
-      `;
-
-      await win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
-
-      const data = await win.webContents.printToPDF({
-        printBackground: true,
-        pageSize: 'A4',
-      });
-
-      await fs.writeFile(targetPath, data);
-      return { success: true };
-    } catch (error) {
-      console.error('[ConversionService] htmlToPdf failed:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      };
-    } finally {
-      if (win) {
-        win.close();
-      }
-    }
+    void html;
+    void targetPath;
+    return {
+      success: false,
+      error: 'PDF export is not available in the WebUI-only server build',
+    };
   }
 
   /**

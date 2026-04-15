@@ -327,49 +327,7 @@ const WeixinConfigForm: React.FC<WeixinConfigFormProps> = ({ pluginStatus, model
   };
 
   const handleLogin = async () => {
-    if (!window.electronAPI?.weixinLoginStart) {
-      handleLoginWebUI();
-      return;
-    }
-
-    setLoginState('loading_qr');
-    setQrcodeDataUrl(null);
-
-    const unsubQR =
-      window.electronAPI.weixinLoginOnQR?.(({ qrcodeUrl: dataUrl }: { qrcodeUrl: string }) => {
-        setQrcodeDataUrl(dataUrl);
-        setLoginState('showing_qr');
-      }) ?? (() => {});
-    const unsubScanned =
-      window.electronAPI.weixinLoginOnScanned?.(() => {
-        setLoginState('scanned');
-      }) ?? (() => {});
-    const unsubDone =
-      window.electronAPI.weixinLoginOnDone?.(() => {
-        // credentials come from the Promise resolve — not this event
-      }) ?? (() => {});
-
-    try {
-      const result = await window.electronAPI.weixinLoginStart();
-      const { accountId, botToken } = result as {
-        accountId: string;
-        botToken: string;
-      };
-      await enableWeixinPlugin(accountId, botToken);
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error);
-      if (msg.toLowerCase().includes('expired') || msg.toLowerCase().includes('too many')) {
-        Message.warning(t('settings.weixin.loginExpired', 'QR code expired, please try again'));
-      } else if (msg !== 'Aborted') {
-        Message.error(t('settings.weixin.loginError', 'WeChat login failed'));
-      }
-      setLoginState('idle');
-      setQrcodeDataUrl(null);
-    } finally {
-      unsubQR();
-      unsubScanned();
-      unsubDone();
-    }
+    handleLoginWebUI();
   };
 
   const isGeminiAgent = selectedAgent.backend === 'gemini' || selectedAgent.backend === 'aionrs';

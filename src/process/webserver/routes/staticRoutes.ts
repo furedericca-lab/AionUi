@@ -16,7 +16,7 @@ import { createRateLimiter } from '../middleware/security';
 
 /**
  * Vite dev server port — read from ELECTRON_RENDERER_URL when available
- * (electron-vite sets it to the actual port), fallback to 5173.
+ * (Vite dev server sets it to the actual port), fallback to 5173.
  */
 const VITE_DEV_PORT = (() => {
   const url = process.env['ELECTRON_RENDERER_URL'];

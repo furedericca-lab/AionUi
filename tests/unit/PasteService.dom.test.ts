@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { FileMetadata } from '@/renderer/services/FileService';
 
-const isElectronDesktop = vi.fn(() => true);
 const trackUpload = vi.fn(() => ({
   id: 1,
   onProgress: vi.fn(),
@@ -9,33 +8,19 @@ const trackUpload = vi.fn(() => ({
 }));
 
 // Mock dependencies before importing PasteService
-vi.mock('@/common', () => ({
-  ipcBridge: {
-    fs: {
-      createTempFile: { invoke: vi.fn() },
-      createUploadFile: { invoke: vi.fn() },
-      writeFile: { invoke: vi.fn() },
-    },
-  },
-}));
-
 vi.mock('@/renderer/services/FileService', () => ({
   getFileExtension: (name: string) => {
     const idx = name.lastIndexOf('.');
     return idx > 0 ? name.slice(idx) : '';
   },
   uploadFileViaHttp: vi.fn(),
+  MAX_UPLOAD_SIZE_MB: 100,
 }));
 
 vi.mock('@/renderer/hooks/file/useUploadState', () => ({
   trackUpload,
 }));
 
-vi.mock('@/renderer/utils/platform', () => ({
-  isElectronDesktop,
-}));
-
-const { ipcBridge } = await import('@/common');
 const { uploadFileViaHttp } = await import('@/renderer/services/FileService');
 
 function createMockClipboardEvent(files: File[]): ClipboardEvent {
@@ -60,29 +45,15 @@ function createImageFile(name: string, size = 100): File {
 
 describe('PasteService.handlePaste — filename deduplication', () => {
   let PasteService: typeof import('@/renderer/services/PasteService').PasteService;
-  let tempFileCounter: number;
-
   beforeEach(async () => {
     vi.clearAllMocks();
-    tempFileCounter = 0;
-    isElectronDesktop.mockReturnValue(true);
     trackUpload.mockReturnValue({
       id: 1,
       onProgress: vi.fn(),
       finish: vi.fn(),
     });
 
-    // Each createTempFile call returns a unique path based on the fileName argument
-    vi.mocked(ipcBridge.fs.createTempFile.invoke).mockImplementation(async ({ fileName }) => {
-      tempFileCounter++;
-      return `/tmp/temp-${tempFileCounter}/${fileName}`;
-    });
-    // Each createUploadFile call returns a unique path based on the fileName argument
-    vi.mocked(ipcBridge.fs.createUploadFile.invoke).mockImplementation(async ({ fileName }) => {
-      tempFileCounter++;
-      return `/tmp/upload-${tempFileCounter}/${fileName}`;
-    });
-    vi.mocked(ipcBridge.fs.writeFile.invoke).mockResolvedValue(undefined as never);
+    vi.mocked(uploadFileViaHttp).mockImplementation(async (file: File) => `/tmp/${file.name}` as never);
 
     // Re-import to get a fresh singleton
     const mod = await import('@/renderer/services/PasteService');
@@ -144,7 +115,6 @@ describe('PasteService.handlePaste — filename deduplication', () => {
   });
 
   it('tracks upload progress for WebUI pasted images', async () => {
-    isElectronDesktop.mockReturnValue(false);
     const onProgress = vi.fn();
     const finish = vi.fn();
     trackUpload.mockReturnValue({

@@ -79,7 +79,7 @@ describe('OfficeDocViewer', () => {
     expect(screen.getByText('preview.errors.missingFilePath')).toBeInTheDocument();
   });
 
-  it('renders webview after successful start', async () => {
+  it('renders iframe after successful start', async () => {
     startInvokeMock.mockResolvedValue({ url: 'http://localhost:12345' });
 
     await act(async () => {
@@ -91,9 +91,9 @@ describe('OfficeDocViewer', () => {
       await new Promise((r) => setTimeout(r, 350));
     });
 
-    const webview = screen.getByTestId('webview-host');
-    expect(webview).toBeInTheDocument();
-    expect(webview.getAttribute('data-url')).toBe('http://localhost:12345');
+    const iframe = screen.getByTitle(/Preview/);
+    expect(iframe).toBeInTheDocument();
+    expect(iframe).toHaveAttribute('src', expect.stringContaining('/12345/'));
   });
 
   it('shows error when start fails', async () => {

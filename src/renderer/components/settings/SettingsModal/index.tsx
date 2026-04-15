@@ -7,7 +7,7 @@
 import AionModal from '@/renderer/components/base/AionModal';
 import AionScrollArea from '@/renderer/components/base/AionScrollArea';
 import { iconColors } from '@/renderer/styles/colors';
-import { isElectronDesktop, resolveExtensionAssetUrl } from '@/renderer/utils/platform';
+import { resolveExtensionAssetUrl } from '@/renderer/utils/platform';
 import { extensions as extensionsIpc, type IExtensionSettingsTab } from '@/common/adapter/ipcBridge';
 import { useExtI18n } from '@/renderer/hooks/system/useExtI18n';
 import { Tabs } from '@arco-design/web-react';
@@ -182,8 +182,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onCancel, defaul
   }, [visible]);
 
   // 检测是否在 Electron 桌面环境 / Check if running in Electron desktop environment
-  const isDesktop = isElectronDesktop();
-
   const { resolveExtTabName } = useExtI18n();
 
   // Extension tab lookup map for renderContent
@@ -219,13 +217,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onCancel, defaul
       },
     ];
 
-    if (isDesktop) {
-      builtinItems.push({
-        key: 'webui',
-        label: t('settings.webui'),
-        icon: <Earth theme='outline' size='20' fill={iconColors.secondary} />,
-      });
-    }
+    builtinItems.push({
+      key: 'webui',
+      label: t('settings.webui'),
+      icon: <Earth theme='outline' size='20' fill={iconColors.secondary} />,
+    });
 
     builtinItems.push(
       {
@@ -286,7 +282,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onCancel, defaul
     }
 
     return builtinItems;
-  }, [t, isDesktop, extensionTabs, resolveExtTabName]);
+  }, [t, extensionTabs, resolveExtTabName]);
 
   // Track which extension tabs have been visited (lazy mount + keep-alive)
   const [mountedExtTabs, setMountedExtTabs] = useState<Set<string>>(new Set());

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { getBuiltinSettingsNavItems } from '@/renderer/pages/settings/components/SettingsPageWrapper';
 
 const t = (key: string, options?: { defaultValue?: string }) => {
@@ -12,15 +12,14 @@ const t = (key: string, options?: { defaultValue?: string }) => {
     'settings.webui': 'WebUI',
     'settings.system': 'System',
     'settings.about': 'About',
-    'pet.desktopPet': 'Desktop Pet',
   };
 
   return labels[key] ?? options?.defaultValue ?? key;
 };
 
 describe('getBuiltinSettingsNavItems', () => {
-  it('returns mobile settings tabs in the same order as desktop sider', () => {
-    const items = getBuiltinSettingsNavItems(false, t);
+  it('returns the WebUI-only settings tabs in stable order', () => {
+    const items = getBuiltinSettingsNavItems(t);
 
     expect(items.map((item) => item.id)).toEqual([
       'gemini',
@@ -30,7 +29,6 @@ describe('getBuiltinSettingsNavItems', () => {
       'capabilities',
       'display',
       'webui',
-      'pet',
       'system',
       'about',
     ]);
@@ -43,14 +41,12 @@ describe('getBuiltinSettingsNavItems', () => {
       'Capabilities',
       'Display',
       'WebUI',
-      'Desktop Pet',
       'System',
       'About',
     ]);
   });
 
-  it('keeps the webui route stable for mobile and desktop nav variants', () => {
-    expect(getBuiltinSettingsNavItems(false, t).find((item) => item.id === 'webui')?.path).toBe('webui');
-    expect(getBuiltinSettingsNavItems(true, t).find((item) => item.id === 'webui')?.path).toBe('webui');
+  it('keeps the webui route stable in the converged WebUI-only product', () => {
+    expect(getBuiltinSettingsNavItems(t).find((item) => item.id === 'webui')?.path).toBe('webui');
   });
 });

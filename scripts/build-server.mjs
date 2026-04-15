@@ -94,7 +94,7 @@ const sharedConfig = {
   bundle: true,
   format: 'esm',
   tsconfig: 'tsconfig.json',
-  external: ['bun:sqlite', 'keytar', 'node-pty', 'ws'],
+  external: ['bun:sqlite', 'node-pty', 'ws'],
   logLevel: 'info',
 };
 

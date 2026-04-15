@@ -201,7 +201,6 @@ const HTMLRenderer: React.FC<HTMLRendererProps> = ({
   });
 
   // 检测是否在 Electron 环境 / Detect if in Electron environment
-  const isElectron = useMemo(() => typeof window !== 'undefined' && window.electronAPI !== undefined, []);
 
   // 监听主题变化 / Monitor theme changes
   useEffect(() => {
@@ -222,14 +221,14 @@ const HTMLRenderer: React.FC<HTMLRendererProps> = ({
   // 判断是否应该直接从文件加载（支持相对资源）- 仅 Electron 环境
   // Determine if should load directly from file (supports relative resources) - Electron only
   const shouldLoadFromFile = useMemo(() => {
-    if (!isElectron || !filePath) return false;
+    if (!filePath) return false;
     // 检查 HTML 是否引用了相对资源 / Check if HTML references relative resources
     const hasRelativeResources =
       /<link[^>]+href=["'](?!https?:\/\/|data:|\/\/)[^"']+["']/i.test(content) ||
       /<script[^>]+src=["'](?!https?:\/\/|data:|\/\/)[^"']+["']/i.test(content) ||
       /<img[^>]+src=["'](?!https?:\/\/|data:|\/\/)[^"']+["']/i.test(content);
     return hasRelativeResources;
-  }, [content, filePath, isElectron]);
+  }, [content, filePath]);
 
   // 检查是否有相对资源（用于 browser inline 处理）
   // Check if has relative resources (for browser inline processing)
@@ -257,12 +256,6 @@ const HTMLRenderer: React.FC<HTMLRendererProps> = ({
   // 在 browser 环境下，当有相对资源时进行内联化处理
   // In browser environment, inline relative resources when present
   useEffect(() => {
-    if (isElectron) {
-      // Electron 环境不需要内联化，使用 webview 加载
-      // Electron environment doesn't need inlining, uses webview loading
-      return;
-    }
-
     if (!hasRelativeResources || !filePath) {
       // 没有相对资源或没有文件路径，使用原始内容
       // No relative resources or no file path, use original content
@@ -289,7 +282,7 @@ const HTMLRenderer: React.FC<HTMLRendererProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [content, filePath, isElectron, hasRelativeResources]);
+  }, [content, filePath, hasRelativeResources]);
 
   // 用于 browser iframe 的最终 HTML 内容
   // Final HTML content for browser iframe
@@ -585,42 +578,17 @@ const HTMLRenderer: React.FC<HTMLRendererProps> = ({
       ref={containerRef || divRef}
       className={`h-full w-full overflow-auto relative ${currentTheme === 'dark' ? 'bg-bg-1' : 'bg-white'}`}
     >
-      {isElectron ? (
-        <>
-          {/* 代理滚动层：使容器可滚动 / Proxy scroll layer: makes container scrollable */}
-          <div style={{ height: proxyHeight, width: '100%', pointerEvents: 'none' }} />
-          {/* webview 固定在容器顶部 / webview fixed at container top */}
-          {/* key 确保内容改变时 webview 重新挂载 / key ensures webview remounts when content changes */}
-          <webview
-            key={webviewSrc}
-            ref={webviewRef}
-            src={webviewSrc}
-            className='w-full border-0'
-            style={{
-              display: 'inline-flex',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: '100%',
-            }}
-            webpreferences='allowRunningInsecureContent, javascript=yes'
-          />
-        </>
-      ) : (
-        <iframe
-          ref={iframeRef}
-          srcDoc={browserHtmlContent}
-          className='w-full h-full border-0'
-          style={{
-            display: 'block',
-            width: '100%',
-            height: '100%',
-          }}
-          sandbox='allow-scripts allow-same-origin allow-forms allow-popups allow-modals'
-        />
-      )}
+      <iframe
+        ref={iframeRef}
+        srcDoc={browserHtmlContent}
+        className='w-full h-full border-0'
+        style={{
+          display: 'block',
+          width: '100%',
+          height: '100%',
+        }}
+        sandbox='allow-scripts allow-same-origin allow-forms allow-popups allow-modals'
+      />
     </div>
   );
 };

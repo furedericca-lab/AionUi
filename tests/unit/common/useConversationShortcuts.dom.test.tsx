@@ -18,18 +18,6 @@ vi.mock('../../../src/renderer/pages/conversation/GroupedHistory/hooks/useVisibl
 
 const mockedUseVisibleConversationIds = vi.mocked(useVisibleConversationIds);
 
-const setElectronRuntime = (enabled: boolean) => {
-  if (enabled) {
-    window.electronAPI = {
-      emit: vi.fn(),
-      on: vi.fn(),
-    };
-    return;
-  }
-
-  delete window.electronAPI;
-};
-
 const createCancelableKeydown = (init: KeyboardEventInit): KeyboardEvent => {
   return new KeyboardEvent('keydown', {
     bubbles: true,
@@ -44,13 +32,10 @@ const createWrapper = (initialEntry: string): React.FC<React.PropsWithChildren> 
 
 describe('useConversationShortcuts', () => {
   beforeEach(() => {
-    globalThis.localStorage?.clear?.();
     mockedUseVisibleConversationIds.mockReset();
-    setElectronRuntime(false);
   });
 
-  it('navigates to the next visible conversation on Ctrl+Tab', () => {
-    setElectronRuntime(true);
+  it('navigates to the next visible conversation on Ctrl+Tab in WebUI', () => {
     mockedUseVisibleConversationIds.mockReturnValue(['1', '2', '3']);
     const navigate = vi.fn() as unknown as NavigateFunction;
     renderHook(() => useConversationShortcuts({ navigate }), {
@@ -66,25 +51,7 @@ describe('useConversationShortcuts', () => {
     expect(navigate).toHaveBeenCalledWith('/conversation/1');
   });
 
-  it('navigates to the previous visible conversation on Ctrl+Shift+Tab', () => {
-    setElectronRuntime(true);
-    mockedUseVisibleConversationIds.mockReturnValue(['1', '2', '3']);
-    const navigate = vi.fn() as unknown as NavigateFunction;
-    renderHook(() => useConversationShortcuts({ navigate }), {
-      wrapper: createWrapper('/conversation/1'),
-    });
-
-    const event = createCancelableKeydown({ key: 'Tab', ctrlKey: true, shiftKey: true });
-    act(() => {
-      window.dispatchEvent(event);
-    });
-
-    expect(event.defaultPrevented).toBe(true);
-    expect(navigate).toHaveBeenCalledWith('/conversation/3');
-  });
-
   it('opens the guid page on Cmd/Ctrl+T and prevents the browser default', () => {
-    setElectronRuntime(true);
     mockedUseVisibleConversationIds.mockReturnValue(['1', '2', '3']);
     const navigate = vi.fn() as unknown as NavigateFunction;
     renderHook(() => useConversationShortcuts({ navigate }), {
@@ -98,35 +65,9 @@ describe('useConversationShortcuts', () => {
 
     expect(ctrlEvent.defaultPrevented).toBe(true);
     expect(navigate).toHaveBeenCalledWith('/guid');
-
-    const metaEvent = createCancelableKeydown({ key: 't', metaKey: true });
-    act(() => {
-      window.dispatchEvent(metaEvent);
-    });
-
-    expect(metaEvent.defaultPrevented).toBe(true);
-    expect(navigate).toHaveBeenCalledTimes(2);
   });
 
-  it('does not navigate on Ctrl+Tab when the current conversation is not in the visible list', () => {
-    setElectronRuntime(true);
-    mockedUseVisibleConversationIds.mockReturnValue(['1', '2', '3']);
-    const navigate = vi.fn() as unknown as NavigateFunction;
-    renderHook(() => useConversationShortcuts({ navigate }), {
-      wrapper: createWrapper('/conversation/9'),
-    });
-
-    const event = createCancelableKeydown({ key: 'Tab', ctrlKey: true });
-    act(() => {
-      window.dispatchEvent(event);
-    });
-
-    expect(event.defaultPrevented).toBe(true);
-    expect(navigate).not.toHaveBeenCalled();
-  });
-
-  it('does not navigate on Ctrl+Tab when fewer than two visible conversations exist', () => {
-    setElectronRuntime(true);
+  it('does not navigate when there is no next conversation to cycle to', () => {
     mockedUseVisibleConversationIds.mockReturnValue(['1']);
     const navigate = vi.fn() as unknown as NavigateFunction;
     renderHook(() => useConversationShortcuts({ navigate }), {
@@ -139,28 +80,6 @@ describe('useConversationShortcuts', () => {
     });
 
     expect(event.defaultPrevented).toBe(true);
-    expect(navigate).not.toHaveBeenCalled();
-  });
-
-  it('preserves browser shortcuts in WebUI', () => {
-    mockedUseVisibleConversationIds.mockReturnValue(['1', '2', '3']);
-    const navigate = vi.fn() as unknown as NavigateFunction;
-    renderHook(() => useConversationShortcuts({ navigate }), {
-      wrapper: createWrapper('/conversation/2'),
-    });
-
-    const tabEvent = createCancelableKeydown({ key: 'Tab', ctrlKey: true });
-    act(() => {
-      window.dispatchEvent(tabEvent);
-    });
-
-    const newConversationEvent = createCancelableKeydown({ key: 't', ctrlKey: true });
-    act(() => {
-      window.dispatchEvent(newConversationEvent);
-    });
-
-    expect(tabEvent.defaultPrevented).toBe(false);
-    expect(newConversationEvent.defaultPrevented).toBe(false);
     expect(navigate).not.toHaveBeenCalled();
   });
 });

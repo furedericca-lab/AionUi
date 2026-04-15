@@ -5,7 +5,6 @@
  */
 
 import { iconColors } from '@/renderer/styles/colors';
-import { isElectronDesktop } from '@/renderer/utils/platform';
 import { Dropdown, Input, Menu, Tooltip } from '@arco-design/web-react';
 import { Down, Plus, Refresh, Search } from '@icon-park/react';
 import React, { useId } from 'react';
@@ -31,7 +30,6 @@ type WorkspaceToolbarProps = {
   // Upload
   handleSelectHostFiles: () => void;
   handleUploadDeviceFiles: () => void;
-  setShowHostFileSelector: (v: boolean) => void;
   // Migration
   handleOpenMigrationModal: () => void;
   handleOpenWorkspaceRoot: () => Promise<void>;
@@ -80,7 +78,6 @@ const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
   refreshWorkspace,
   handleSelectHostFiles,
   handleUploadDeviceFiles,
-  setShowHostFileSelector,
   handleOpenMigrationModal,
   handleOpenWorkspaceRoot,
 }) => {
@@ -88,11 +85,7 @@ const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
     <Menu
       onClickMenuItem={(key) => {
         if (key === 'host') {
-          if (isElectronDesktop()) {
-            handleSelectHostFiles();
-          } else {
-            setShowHostFileSelector(true);
-          }
+          handleSelectHostFiles();
         }
         if (key === 'device') {
           handleUploadDeviceFiles();
@@ -166,18 +159,16 @@ const WorkspaceToolbar: React.FC<WorkspaceToolbarProps> = ({
           )}
         </div>
         <div className='workspace-toolbar-actions flex items-center gap-8px flex-shrink-0'>
-          {!isElectronDesktop() && (
-            <Dropdown droplist={workspaceUploadMenu} trigger='click' position='bl'>
-              <span>
-                <Plus
-                  className='workspace-toolbar-icon-btn lh-[1] flex cursor-pointer'
-                  theme='outline'
-                  size='16'
-                  fill={iconColors.secondary}
-                />
-              </span>
-            </Dropdown>
-          )}
+          <Dropdown droplist={workspaceUploadMenu} trigger='click' position='bl'>
+            <span>
+              <Plus
+                className='workspace-toolbar-icon-btn lh-[1] flex cursor-pointer'
+                theme='outline'
+                size='16'
+                fill={iconColors.secondary}
+              />
+            </span>
+          </Dropdown>
           {isTemporaryWorkspace && (
             <Tooltip content={t('conversation.workspace.changeWorkspace')}>
               <span>

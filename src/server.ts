@@ -16,6 +16,7 @@ import { initBridgeStandalone } from './process/utils/initBridgeStandalone';
 import { logEnvironmentDiagnostics } from './process/utils/shellEnv';
 import { startWebServerWithInstance } from './process/webserver';
 import { cleanupWebAdapter } from './process/webserver/adapter';
+import { setWebServerInstance } from './process/bridge/webuiBridge';
 import initStorage from './process/utils/initStorage';
 import { ExtensionRegistry } from './process/extensions';
 import { getChannelManager } from './process/channels';
@@ -111,8 +112,8 @@ async function main(): Promise<void> {
 
   // Start the WebServer
   const instance = await startWebServerWithInstance(PORT, ALLOW_REMOTE);
-  // Expose to the top-level shutdown handler
   serverInstance = instance;
+  setWebServerInstance(instance);
 
   console.log(`[server] WebUI running on http://${ALLOW_REMOTE ? '0.0.0.0' : 'localhost'}:${PORT}`);
 }
