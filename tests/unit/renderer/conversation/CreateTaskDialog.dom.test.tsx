@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ICronJob } from '@/common/adapter/ipcBridge';
 
 const mockShowOpen = vi.hoisted(() => vi.fn().mockResolvedValue([]));
-const mockIsElectronDesktop = vi.hoisted(() => vi.fn(() => true));
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
@@ -90,10 +89,6 @@ vi.mock('@/common', () => ({
       updateJob: { invoke: (...args: unknown[]) => mockUpdateJob(...args) },
     },
   },
-}));
-
-vi.mock('@renderer/utils/platform', () => ({
-  isElectronDesktop: mockIsElectronDesktop,
 }));
 
 // Mock Arco Design components
@@ -353,7 +348,6 @@ import CreateTaskDialog from '@/renderer/pages/cron/ScheduledTasksPage/CreateTas
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
-  mockIsElectronDesktop.mockReturnValue(true);
   mockShowOpen.mockResolvedValue([]);
 });
 
@@ -1001,17 +995,10 @@ describe('CreateTaskDialog - advanced settings workspace picker', () => {
 
     render(<CreateTaskDialog visible onClose={vi.fn()} editJob={editJob} conversationId='conv-1' />);
 
-    const workspaceTrigger = screen.getByTestId('cron-workspace-trigger');
-    expect(workspaceTrigger.className).toContain('bg-fill-1');
-    expect(workspaceTrigger.className).toContain('border-border-2');
-    expect(workspaceTrigger.className).toContain('py-0');
+    const workspaceInput = screen.getByPlaceholderText('Workspace path');
+    expect(workspaceInput).toHaveValue('/tmp/scheduled-workspace');
     expect(screen.queryByText('Optional workspace')).not.toBeInTheDocument();
-
-    fireEvent.click(workspaceTrigger);
-
-    const workspaceMenu = screen.getByTestId('cron-workspace-menu');
-    expect(workspaceMenu.className).toContain('border-border-1');
-    expect(screen.getAllByText('scheduled-workspace')).toHaveLength(2);
+    expect(screen.getAllByDisplayValue('/tmp/scheduled-workspace')).toHaveLength(1);
   });
 });
 
@@ -1259,22 +1246,21 @@ describe('CreateTaskDialog - advanced settings panel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
-    mockIsElectronDesktop.mockReturnValue(true);
   });
 
   it('toggles the advanced settings panel open and closed', () => {
     render(<CreateTaskDialog visible={true} onClose={vi.fn()} conversationId='conv-1' />);
 
     // Workspace picker is hidden initially
-    expect(screen.queryByTestId('cron-workspace-trigger')).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('Workspace path')).not.toBeInTheDocument();
 
     // Open panel
     fireEvent.click(screen.getByTestId('mock-button'));
-    expect(screen.getByTestId('cron-workspace-trigger')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Workspace path')).toBeInTheDocument();
 
     // Close panel again
     fireEvent.click(screen.getByTestId('mock-button'));
-    expect(screen.queryByTestId('cron-workspace-trigger')).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('Workspace path')).not.toBeInTheDocument();
   });
 
   it('clears the workspace via the close icon inside the picker', () => {
@@ -1309,16 +1295,8 @@ describe('CreateTaskDialog - advanced settings panel', () => {
     render(<CreateTaskDialog visible onClose={vi.fn()} editJob={editJob} conversationId='conv-1' />);
 
     // Advanced open because workspace was set in agentConfig
-    const workspaceTrigger = screen.getByTestId('cron-workspace-trigger');
-    expect(workspaceTrigger).toBeInTheDocument();
-    // Clear icon present because workspace has a value
-    expect(workspaceTrigger.querySelector('[data-testid="icon-close"]')).not.toBeNull();
-
-    fireEvent.click(workspaceTrigger.querySelector('[data-testid="icon-close"]') as Element);
-
-    // After clearing, the trigger swaps back to the empty state affordance.
-    expect(workspaceTrigger.querySelector('[data-testid="icon-close"]')).toBeNull();
-    expect(workspaceTrigger.querySelector('[data-testid="icon-down"]')).not.toBeNull();
+    const workspaceInput = screen.getByPlaceholderText('Workspace path');
+    expect(workspaceInput).toHaveValue('/tmp/ws');
   });
 
   it('opens advanced panel pre-expanded when editJob has a workspace', () => {
@@ -1350,6 +1328,6 @@ describe('CreateTaskDialog - advanced settings panel', () => {
 
     render(<CreateTaskDialog visible onClose={vi.fn()} editJob={editJob} conversationId='conv-1' />);
 
-    expect(screen.getByTestId('cron-workspace-trigger')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Workspace path')).toHaveValue('/projects/my-app');
   });
 });

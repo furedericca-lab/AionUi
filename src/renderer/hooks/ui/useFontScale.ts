@@ -28,7 +28,7 @@ const clampFontScale = (value: number) => {
 const useFontScale = (): [number, (scale: number) => Promise<void>] => {
   const [fontScale, setFontScaleState] = useState(FONT_SCALE_DEFAULT);
 
-  // 从主进程读取当前缩放，保持 UI 与 Electron 同步 / Pull zoom factor from main to keep UI state aligned
+  // 从 bridge 读取当前缩放，保持 UI 与运行时设置同步 / Pull zoom factor from bridge to keep UI state aligned
   const fetchZoomFactor = useCallback(async () => {
     try {
       const currentFactor = await ipcBridge.application.getZoomFactor.invoke();

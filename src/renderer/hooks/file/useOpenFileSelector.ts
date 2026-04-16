@@ -14,8 +14,7 @@ interface UseOpenFileSelectorResult {
  * Shared open-file selector behavior for send boxes.
  * Unifies '+' button and '/open' builtin command handling.
  *
- * In Electron: opens native file dialog.
- * In WebUI: triggers DirectorySelectionModal via bridge events.
+ * Opens the runtime file picker through the shared bridge.
  */
 export function useOpenFileSelector(options: UseOpenFileSelectorOptions): UseOpenFileSelectorResult {
   const { onFilesSelected } = options;

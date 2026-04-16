@@ -7,11 +7,11 @@ This document defines the coding standards and best practices for the AionUI pro
 ## Technology Stack
 
 - **Runtime**: Bun
-- **Framework**: Electron + React
+- **Framework**: WebUI-only server + React
 - **Language**: TypeScript (strict mode)
 - **Styling**: Tailwind CSS + Arco Design
 - **State Management**: React hooks + SWR
-- **i18n**: react-i18next (support: en-US, zh-CN, zh-TW, ja-JP, ko-KR)
+- **i18n**: react-i18next (support: en-US, zh-CN, ja-JP)
 
 ## Code Quality Standards
 
@@ -43,7 +43,7 @@ This document defines the coding standards and best practices for the AionUI pro
 - Never commit secrets or API keys
 - Validate all user inputs
 - Sanitize data before rendering (XSS prevention)
-- Use secure IPC communication patterns in Electron
+- Use secure WebUI bridge communication patterns
 
 ### Performance
 
@@ -57,7 +57,7 @@ This document defines the coding standards and best practices for the AionUI pro
 ```
 src/
 ├── common/         # Shared utilities and types
-├── process/        # Main process code (Electron)
+├── process/        # Backend / server-side runtime code
 ├── renderer/       # Renderer process code (React)
 │   ├── components/ # Reusable UI components
 │   ├── hooks/      # Custom React hooks

@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export const isElectronDesktop = (): boolean => false;
-
 export const isMacOS = (): boolean => {
   return typeof navigator !== 'undefined' && /mac/i.test(navigator.userAgent);
 };

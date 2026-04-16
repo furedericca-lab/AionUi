@@ -60,11 +60,6 @@ vi.mock('@/renderer/styles/colors', () => ({
   },
 }));
 
-const mockIsElectronDesktop = vi.fn(() => true);
-vi.mock('@/renderer/utils/platform', () => ({
-  isElectronDesktop: () => mockIsElectronDesktop(),
-}));
-
 vi.mock('@/renderer/utils/model/agentModes', () => ({
   getAgentModes: () => [{ label: 'Default', value: 'default' }],
   supportsModeSwitch: () => false,
@@ -111,7 +106,6 @@ describe('GuidActionRow', () => {
   });
 
   it('shows generic error toast when file upload fails', async () => {
-    mockIsElectronDesktop.mockReturnValueOnce(false); // WebUI mode so file input is rendered
     const { Message } = await import('@arco-design/web-react');
     vi.mocked(FileService.processDroppedFiles).mockRejectedValueOnce(new Error('Upload failed'));
 

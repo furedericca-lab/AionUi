@@ -61,7 +61,7 @@ const WeixinConfigForm: React.FC<WeixinConfigFormProps> = ({ pluginStatus, model
   const [loginState, setLoginState] = useState<LoginState>(
     pluginStatus?.hasToken && pluginStatus?.enabled ? 'connected' : 'idle'
   );
-  // In Electron mode this holds a base64 data URL; in WebUI mode it holds the raw QR ticket string.
+  // Holds the QR payload produced by the current runtime; WebUI uses the raw QR ticket string.
   const [qrcodeDataUrl, setQrcodeDataUrl] = useState<string | null>(null);
   const [isWebUIMode, setIsWebUIMode] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);

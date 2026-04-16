@@ -9,12 +9,12 @@ description: |
 
 # Architecture Skill
 
-Determine correct file placement and structure for an Electron multi-process project.
+Determine correct file placement and structure for the WebUI-only server product.
 
 ## Detailed References
 
 - **Renderer layer** (components, hooks, utils, pages, CSS): [references/renderer.md](references/renderer.md)
-- **Main process & shared layer** (bridges, services, worker, preload): [references/process.md](references/process.md)
+- **Backend & shared layer** (bridges, services, worker): [references/process.md](references/process.md)
 - **Project root & src/ layout** (directory structure, migration status): [references/project-layout.md](references/project-layout.md)
 
 ---
@@ -56,24 +56,23 @@ Is it a messaging channel (Lark, DingTalk, Telegram)?
 
 **Hard rules — violating them causes runtime crashes.**
 
-| Process                            | Can use                                                    | Cannot use                                      |
-| ---------------------------------- | ---------------------------------------------------------- | ----------------------------------------------- |
-| **Main** (`src/process/`)          | Node.js, Electron main APIs, `fs`, `path`, `child_process` | DOM APIs (`document`, `window`, React)          |
-| **Renderer** (`src/renderer/`)     | DOM APIs, React, browser APIs                              | Node.js APIs (`fs`, `path`), Electron main APIs |
-| **Worker** (`src/process/worker/`) | Node.js APIs                                               | DOM APIs, Electron APIs                         |
-| **Preload** (`src/preload.ts`)     | `contextBridge`, `ipcRenderer`                             | DOM manipulation, Node.js `fs`                  |
+| Process                            | Can use                                     | Cannot use                                   |
+| ---------------------------------- | ------------------------------------------- | -------------------------------------------- |
+| **Backend** (`src/process/`)       | Node.js APIs, `fs`, `path`, `child_process` | DOM APIs (`document`, `window`, React)       |
+| **Renderer** (`src/renderer/`)     | DOM APIs, React, browser APIs               | Node.js APIs (`fs`, `path`), backend imports |
+| **Worker** (`src/process/worker/`) | Node.js APIs                                | DOM APIs, backend Electron assumptions       |
 
 Cross-process communication:
 
-- Main ↔ Renderer: IPC via `src/preload.ts` + `src/process/bridge/*.ts`
-- Main ↔ Worker: fork protocol via `src/process/worker/WorkerProtocol.ts`
+- Backend ↔ Renderer: bridge providers/events via `src/common/adapter/*` + `src/process/bridge/*.ts`
+- Backend ↔ Worker: fork protocol via `src/process/worker/WorkerProtocol.ts`
 
 ```typescript
 // NEVER in renderer
 import { something } from '@process/services/foo'; // crashes at runtime
 
 // Use IPC instead
-const result = await window.api.someMethod(); // goes through preload
+const result = await ipcBridge.someNamespace.someMethod.invoke(params);
 ```
 
 ---
@@ -130,7 +129,7 @@ When `tests/unit/` exceeds 10 direct children, group into subdirectories matchin
 - [ ] Code is in the correct process directory (no cross-process imports)
 - [ ] Renderer code does not use Node.js APIs
 - [ ] Main process code does not use DOM APIs
-- [ ] New IPC channels are bridged through `preload.ts`
+- [ ] New bridge channels work in the WebUI/browser adapter path
 - [ ] Renderer component/module dirs use PascalCase; categorical dirs use lowercase
 - [ ] Platform dirs use lowercase everywhere
 - [ ] Directory-based modules have `index.tsx` / `index.ts` entry point

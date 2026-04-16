@@ -59,7 +59,7 @@ export default defineConfig({
         // Type declaration files (no runtime code)
         'src/**/*.d.ts',
 
-        // Electron entry points (require Electron runtime)
+        // Removed historical entry points retained only in old coverage reports
         'src/index.ts',
         'src/preload.ts',
 

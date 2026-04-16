@@ -19,18 +19,3 @@ declare module '*?raw' {
 }
 
 declare module 'unocss';
-
-declare namespace Electron {
-  interface ConsoleMessageEvent extends Event {
-    message: string;
-  }
-
-  interface WebviewTag extends HTMLElement {
-    src: string;
-    reload(): void;
-    executeJavaScript(script: string): Promise<unknown>;
-    setZoomFactor?(factor: number): void;
-    addEventListener(type: string, listener: EventListenerOrEventListenerObject): void;
-    removeEventListener(type: string, listener: EventListenerOrEventListenerObject): void;
-  }
-}

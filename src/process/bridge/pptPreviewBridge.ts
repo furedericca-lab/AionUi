@@ -9,7 +9,7 @@
  *
  * Manages officecli watch child processes for live PPT preview.
  * Each pptx file gets one watch process on a unique port.
- * The renderer loads http://localhost:<port> in a webview.
+ * The renderer loads http://localhost:<port> in a browser iframe.
  */
 
 import { ipcBridge } from '@/common';

@@ -37,7 +37,7 @@
 
 ### 2.1 技术栈约束
 
-- **框架**: Electron 37 + React 19 + TypeScript 5.8
+- **框架**: Bun + React 19 + TypeScript 5.8（WebUI-only）
 - **UI库**: Arco Design (@arco-design/web-react)
 - **图标**: Icon Park (@icon-park/react)
 - **CSS**: UnoCSS 原子化样式
@@ -75,7 +75,7 @@ src/
 │   ├── types/                    # 共享类型定义
 │   └── utils/                    # 共享工具函数
 │
-├── process/                      # Electron 主进程
+├── process/                      # 后端 / 服务 / worker 管理
 │   ├── bridge/                   # IPC 桥接定义 (24+ 个)
 │   ├── database/                 # SQLite 数据库操作
 │   ├── services/                 # 业务逻辑服务
@@ -189,9 +189,9 @@ src/
 | -------- | ------------------- | ---- |
 |          | [ ] 新增 / [ ] 修改 |      |
 
-### 3.3 IPC 通信设计
+### 3.3 Bridge / 通信设计
 
-如需新增 IPC 通道，遵循以下模式：
+如需新增 bridge 通道，遵循以下模式：
 
 ```typescript
 // src/process/bridge/[功能]Bridge.ts

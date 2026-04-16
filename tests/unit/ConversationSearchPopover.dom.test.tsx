@@ -69,13 +69,6 @@ vi.mock('react-router-dom', async () => {
 
 import ConversationSearchPopover from '../../src/renderer/pages/conversation/GroupedHistory/ConversationSearchPopover';
 
-const setElectronAPI = (value?: object) => {
-  Object.defineProperty(window, 'electronAPI', {
-    configurable: true,
-    value,
-  });
-};
-
 describe('ConversationSearchPopover', () => {
   beforeEach(() => {
     searchConversationMessagesInvoke.mockReset();
@@ -85,7 +78,6 @@ describe('ConversationSearchPopover', () => {
     blockMobileInputFocusMock.mockReset();
     blurActiveElementMock.mockReset();
     globalThis.localStorage?.clear?.();
-    setElectronAPI(undefined);
   });
 
   afterEach(() => {
@@ -181,7 +173,6 @@ describe('ConversationSearchPopover', () => {
 
     expect(screen.getByPlaceholderText('conversation.historySearch.placeholder')).toHaveValue('');
   });
-
 
   it('ignores composing and already-handled shortcuts', () => {
     render(<ConversationSearchPopover />);

@@ -27,7 +27,6 @@ type SpeechInputEnvironment = {
   hasMediaDevices: boolean;
   hasMediaRecorder: boolean;
   hostname: string;
-  isElectronDesktop: boolean;
   isSecureContext: boolean;
 };
 
@@ -75,7 +74,6 @@ const getSpeechInputEnvironment = (): SpeechInputEnvironment => {
       hasMediaDevices: false,
       hasMediaRecorder: false,
       hostname: '',
-      isElectronDesktop: false,
       isSecureContext: false,
     };
   }
@@ -85,7 +83,6 @@ const getSpeechInputEnvironment = (): SpeechInputEnvironment => {
     hasMediaDevices: typeof navigator !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia),
     hasMediaRecorder: typeof MediaRecorder !== 'undefined',
     hostname: window.location.hostname,
-    isElectronDesktop: false,
     isSecureContext: window.isSecureContext,
   };
 };
@@ -96,7 +93,7 @@ export const getSpeechInputAvailabilityForEnvironment = (
   const canUseLiveRecording =
     environment.hasMediaDevices &&
     environment.hasMediaRecorder &&
-    (environment.isElectronDesktop || environment.isSecureContext || LOCAL_HOSTNAMES.has(environment.hostname));
+    (environment.isSecureContext || LOCAL_HOSTNAMES.has(environment.hostname));
 
   if (canUseLiveRecording) {
     return 'record';

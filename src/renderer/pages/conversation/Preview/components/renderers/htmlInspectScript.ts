@@ -129,8 +129,11 @@ export function generateInspectScript(inspectMode: boolean, messages: InspectMes
           const html = element.outerHTML;
           const tag = getSimplifiedTag(element);
 
-          // 通过 console.log 发送消息（webview 会捕获）/ Send message via console.log (webview will capture)
-          console.log('__INSPECT_ELEMENT__' + JSON.stringify({ html: html, tag: tag }));
+          // 通过 postMessage 发送消息给父窗口 / Send message to parent window via postMessage
+          window.parent.postMessage({
+            type: 'aion:inspect-element',
+            data: { html: html, tag: tag }
+          }, '*');
 
           // 显示提示 / Show notification
           showNotification(${copySuccess});

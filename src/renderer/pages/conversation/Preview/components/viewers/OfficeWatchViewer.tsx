@@ -17,7 +17,7 @@ const BRIDGE = {
   excel: ipcBridge.excelPreview,
 } as const;
 
-// Web-server proxy base paths (Electron uses the direct localhost URL instead)
+// Web-server proxy base paths for browser iframe previews
 const PROXY_PATH: Record<DocType, string> = {
   ppt: '/api/ppt-proxy',
   word: '/api/office-watch-proxy',
@@ -61,7 +61,7 @@ interface OfficeWatchViewerProps {
  * Shared Office watch viewer.
  *
  * Launches an `officecli watch` child process via IPC, waits for the local
- * HTTP server to be ready, then renders it in a webview (Electron) or iframe
+ * HTTP server to be ready, then renders it in a browser iframe
  * (web server mode). Cleans up the process on unmount.
  *
  * Used by PptViewer, OfficeDocViewer, and ExcelViewer — each passes its

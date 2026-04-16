@@ -15,10 +15,6 @@ vi.mock('@/renderer/services/SpeechToTextService', () => ({
   transcribeAudioBlob: (...args: unknown[]) => mockTranscribeAudioBlob(...args),
 }));
 
-vi.mock('@/renderer/utils/platform', () => ({
-  isElectronDesktop: () => false,
-}));
-
 const installRecordingEnvironment = ({ getUserMedia }: { getUserMedia: () => Promise<MediaStream> }) => {
   Object.defineProperty(navigator, 'mediaDevices', {
     configurable: true,
@@ -76,7 +72,6 @@ describe('getSpeechInputAvailabilityForEnvironment', () => {
         hasMediaDevices: true,
         hasMediaRecorder: true,
         hostname: 'example.com',
-        isElectronDesktop: false,
         isSecureContext: true,
       })
     ).toBe('record');
@@ -89,7 +84,6 @@ describe('getSpeechInputAvailabilityForEnvironment', () => {
         hasMediaDevices: false,
         hasMediaRecorder: false,
         hostname: 'example.com',
-        isElectronDesktop: false,
         isSecureContext: false,
       })
     ).toBe('file');

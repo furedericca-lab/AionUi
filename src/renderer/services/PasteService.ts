@@ -149,7 +149,7 @@ class PasteServiceClass {
         const file = files[i];
         const filePath = (file as File & { path?: string }).path;
 
-        // 检查是否有文件路径 (Electron 环境下 File 对象会有额外的 path 属性)
+        // 检查是否有文件路径（部分桌面运行时会在 File 对象上附带 path 属性）
 
         if (!filePath && file.type.startsWith('image/')) {
           // 剪贴板图片，需要检查是否支持该类型
@@ -180,7 +180,7 @@ class PasteServiceClass {
               }
               usedFileNames.add(fileName);
 
-              // 创建临时文件并写入数据（Electron 使用 IPC，WebUI 使用 HTTP API）
+              // 创建临时文件并写入数据（通过当前运行时的桥接/上传路径）
               const tempPath = await createTempFile(fileName, uint8Array, file.type, conversationId, source);
 
               if (tempPath) {

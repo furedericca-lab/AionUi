@@ -191,6 +191,21 @@ The resulting shape is:
 - Electron Playwright E2E harness removed from the supported product path
 - i18n cleanup completed for the removed desktop/update surfaces so validation passes cleanly
 
+## 2026-04-16 convergence tail completion
+
+After the main migration landed, a final cleanup tail pass was completed on **April 16, 2026** to remove the last supported-path desktop residue that still made the product look partially dual-mode.
+
+That tail pass included:
+
+- replacing the former URL preview / extension external-page `<webview>` path with a browser-safe iframe host while retaining the existing component surface for compatibility
+- converting HTML preview to a true iframe-based implementation with inline-resource handling, postMessage-based inspect events, and iframe scroll sync
+- converting PDF preview away from Electron-only load events to a WebUI-safe blob/iframe path
+- removing the desktop-only feedback modal path (`@sentry/electron/renderer`, `window.electronAPI` assumptions) and replacing it with a prefilled GitHub bug-report draft flow
+- deleting dead desktop helper scripts and obsolete root config left over from packaging-era workflows
+- removing the remaining front-end/test-path `electronAPI`, `ElectronBridgeAPI`, and `isElectronDesktop` residue so the supported renderer path now reflects the WebUI-only product truth more directly
+
+These changes do not alter the product decision; they simply finish the repository-shape cleanup needed for the codebase to tell the same WebUI-only story all the way through runtime, preview UX, test scaffolding, and contributor-facing guidance.
+
 ## Residual follow-ups kept out of scope
 
 These do **not** block the WebUI-only convergence, but may still be worth future cleanup:
@@ -199,6 +214,7 @@ These do **not** block the WebUI-only convergence, but may still be worth future
 - replacing removed desktop E2E coverage with browser-native WebUI automation if needed later
 - further slimming of historical docs/research notes that still discuss old Electron architecture for archival reasons
 - optional fresh-container Docker build/run verification in CI or release workflow
+- optional follow-up hardening for iframe-based external previews, since some third-party pages may refuse embedding via `X-Frame-Options` or CSP and that is now a browser/runtime limitation rather than an Electron integration concern
 
 ## Final note
 

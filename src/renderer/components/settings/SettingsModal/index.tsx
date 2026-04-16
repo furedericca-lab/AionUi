@@ -181,7 +181,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ visible, onCancel, defaul
       });
   }, [visible]);
 
-  // 检测是否在 Electron 桌面环境 / Check if running in Electron desktop environment
   const { resolveExtTabName } = useExtI18n();
 
   // Extension tab lookup map for renderContent

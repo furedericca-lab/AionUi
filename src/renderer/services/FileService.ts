@@ -198,12 +198,12 @@ export function getFilesFromDropEvent(event: DragEvent): FileMetadata[] {
 
   for (let i = 0; i < event.dataTransfer.files.length; i++) {
     const file = event.dataTransfer.files[i];
-    // 在 Electron 环境中，拖拽文件会有额外的 path 属性
-    const electronFile = file as File & { path?: string };
+    // Desktop-originated File objects may expose a nonstandard path property.
+    const fileWithPath = file as File & { path?: string };
 
     files.push({
       name: file.name,
-      path: electronFile.path || '', // 原始路径，可能为空
+      path: fileWithPath.path || '', // 原始路径，可能为空
       size: file.size,
       type: file.type,
       lastModified: file.lastModified,
@@ -267,10 +267,10 @@ class FileServiceClass {
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      // In Electron environment, dragged files have additional path property
-      const electronFile = file as File & { path?: string };
+      // Desktop-originated File objects may expose a nonstandard path property.
+      const fileWithPath = file as File & { path?: string };
 
-      let filePath = electronFile.path || '';
+      let filePath = fileWithPath.path || '';
 
       // If no valid path (WebUI or some dragged files may not have paths), create temporary file
       if (!filePath) {

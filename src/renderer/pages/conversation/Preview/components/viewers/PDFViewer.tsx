@@ -24,19 +24,24 @@ interface PDFPreviewProps {
   hideToolbar?: boolean;
 }
 
-// Electron webview 元素的类型定义 / Type definition for Electron webview element
-interface ElectronWebView extends HTMLElement {
-  src: string;
-}
+const isDirectPreviewUrl = (value: string): boolean => /^(https?:|data:|blob:|file:)/i.test(value);
 
 const PDFPreview: React.FC<PDFPreviewProps> = ({ filePath, content, hideToolbar = false }) => {
   const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const webviewRef = useRef<ElectronWebView>(null);
+  const [pdfSrc, setPdfSrc] = useState<string | null>(null);
+  const objectUrlRef = useRef<string | null>(null);
   const [messageApi, messageContextHolder] = Message.useMessage();
   const toolbarExtrasContext = usePreviewToolbarExtras();
   const usePortalToolbar = Boolean(toolbarExtrasContext) && !hideToolbar;
+
+  const cleanupObjectUrl = useCallback(() => {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
+  }, []);
 
   const handleOpenInSystem = useCallback(async () => {
     if (!filePath) {
@@ -53,9 +58,13 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ filePath, content, hideToolbar 
   }, [filePath, messageApi, t]);
 
   useEffect(() => {
-    try {
+    let cancelled = false;
+
+    const loadPdf = async () => {
+      cleanupObjectUrl();
       setLoading(true);
       setError(null);
+      setPdfSrc(null);
 
       if (!filePath && !content) {
         setError(t('preview.pdf.pathMissing'));
@@ -63,33 +72,49 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ filePath, content, hideToolbar 
         return;
       }
 
-      // webview 加载成功后隐藏 loading
-      // Hide loading after webview finishes loading
-      const webview = webviewRef.current;
-      if (webview) {
-        const handleLoad = () => {
-          setLoading(false);
-        };
-        const handleError = () => {
-          setError(t('preview.pdf.loadFailed'));
-          setLoading(false);
-        };
+      try {
+        if (filePath) {
+          const buffer = await ipcBridge.fs.readFileBuffer.invoke({ path: filePath });
+          if (!buffer) {
+            setError(t('preview.pdf.loadFailed'));
+            setLoading(false);
+            return;
+          }
 
-        webview.addEventListener('did-finish-load', handleLoad);
-        webview.addEventListener('did-fail-load', handleError);
+          const nextUrl = URL.createObjectURL(new Blob([buffer], { type: 'application/pdf' }));
+          if (cancelled) {
+            URL.revokeObjectURL(nextUrl);
+            return;
+          }
 
-        return () => {
-          webview.removeEventListener('did-finish-load', handleLoad);
-          webview.removeEventListener('did-fail-load', handleError);
-        };
-      } else {
+          objectUrlRef.current = nextUrl;
+          setPdfSrc(nextUrl);
+          setLoading(false);
+          return;
+        }
+
+        if (content) {
+          setPdfSrc(isDirectPreviewUrl(content) ? content : `data:application/pdf;base64,${content}`);
+          setLoading(false);
+          return;
+        }
+
+        setError(t('preview.pdf.pathMissing'));
+        setLoading(false);
+      } catch (err) {
+        if (cancelled) return;
+        setError(`${t('preview.pdf.loadFailed')}: ${err instanceof Error ? err.message : String(err)}`);
         setLoading(false);
       }
-    } catch (err) {
-      setError(`${t('preview.pdf.loadFailed')}: ${err instanceof Error ? err.message : String(err)}`);
-      setLoading(false);
-    }
-  }, [filePath, content, t]);
+    };
+
+    void loadPdf();
+
+    return () => {
+      cancelled = true;
+      cleanupObjectUrl();
+    };
+  }, [cleanupObjectUrl, content, filePath, t]);
 
   // 设置工具栏扩展（必须在所有条件返回之前调用）
   // Set toolbar extras (must be called before any conditional returns)
@@ -106,10 +131,6 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ filePath, content, hideToolbar 
     });
     return () => toolbarExtrasContext.setExtras(null);
   }, [usePortalToolbar, toolbarExtrasContext, t, loading, error]);
-
-  // 使用 Electron webview 加载本地 PDF 文件
-  // Use Electron webview to load local PDF files
-  const pdfSrc = filePath ? `file://${filePath}` : content || '';
 
   if (error) {
     return (
@@ -155,11 +176,10 @@ const PDFPreview: React.FC<PDFPreviewProps> = ({ filePath, content, hideToolbar 
       )}
       {/* PDF 内容区域 / PDF content area */}
       <div className='flex-1 overflow-hidden bg-bg-1'>
-        {/* key 确保文件路径改变时 webview 重新挂载 / key ensures webview remounts when file path changes */}
-        <webview
+        <iframe
           key={pdfSrc}
-          ref={webviewRef}
-          src={pdfSrc}
+          src={pdfSrc ?? ''}
+          title={t('preview.pdf.title')}
           className='w-full h-full'
           style={{ display: 'inline-flex' }}
         />

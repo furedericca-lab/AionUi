@@ -1068,6 +1068,8 @@ export type I18nKey =
   | 'settings.bugReportDescriptionLabel'
   | 'settings.bugReportDescriptionPlaceholder'
   | 'settings.bugReportError'
+  | 'settings.bugReportIssueEnvironment'
+  | 'settings.bugReportIssueNoScreenshots'
   | 'settings.bugReportModuleAgentTeam'
   | 'settings.bugReportModuleAgentTeamDescription'
   | 'settings.bugReportModuleAssistant'

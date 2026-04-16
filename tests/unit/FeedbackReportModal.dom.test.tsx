@@ -2,8 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import FeedbackReportModal from '@renderer/components/settings/SettingsModal/contents/FeedbackReportModal';
 
-const { modalWrapperMock } = vi.hoisted(() => ({
+const { modalWrapperMock, openExternalUrlMock, messageSuccessMock, messageErrorMock } = vi.hoisted(() => ({
   modalWrapperMock: vi.fn(),
+  openExternalUrlMock: vi.fn(),
+  messageSuccessMock: vi.fn(),
+  messageErrorMock: vi.fn(),
 }));
 
 // Mock i18n
@@ -13,20 +16,9 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-// Mock Sentry
-const mockCaptureEvent = vi.fn();
-const mockWithScope = vi.fn((cb) =>
-  cb({
-    setTag: vi.fn(),
-    addAttachment: vi.fn(),
-  })
-);
-
-vi.mock('@sentry/electron/renderer', () => ({
-  captureEvent: mockCaptureEvent,
-  withScope: mockWithScope,
+vi.mock('@renderer/utils/platform', () => ({
+  openExternalUrl: (...args: unknown[]) => openExternalUrlMock(...args),
 }));
-
 function createClipboardEvent(files: File[]): ClipboardEvent {
   const fileList = Object.assign([...files], { item: (index: number) => files[index] ?? null });
   const event = new Event('paste', { bubbles: true, cancelable: true }) as ClipboardEvent;
@@ -39,14 +31,6 @@ function createClipboardEvent(files: File[]): ClipboardEvent {
 
   return event;
 }
-
-// Mock electronAPI
-Object.defineProperty(window, 'electronAPI', {
-  value: {
-    collectFeedbackLogs: vi.fn().mockResolvedValue(null),
-  },
-  writable: true,
-});
 
 // Mock ModalWrapper to render children directly
 vi.mock('@renderer/components/base/ModalWrapper', () => ({
@@ -179,8 +163,8 @@ vi.mock('@arco-design/web-react', () => ({
     }
   ),
   Message: {
-    success: vi.fn(),
-    error: vi.fn(),
+    success: messageSuccessMock,
+    error: messageErrorMock,
   },
   Upload: ({
     tip,
@@ -214,6 +198,7 @@ describe('FeedbackReportModal', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    openExternalUrlMock.mockResolvedValue(undefined);
   });
 
   it('should render form fields when visible', () => {
@@ -323,7 +308,7 @@ describe('FeedbackReportModal', () => {
     expect(screen.queryByText('settings.bugReportScreenshotHelp')).toBeNull();
   });
 
-  it('should submit a generated summary based on the selected module and description', async () => {
+  it('should open a GitHub draft issue with the selected module and description', async () => {
     render(<FeedbackReportModal visible={true} onCancel={onCancel} />);
 
     fireEvent.change(screen.getByRole('combobox'), {
@@ -335,22 +320,20 @@ describe('FeedbackReportModal', () => {
     fireEvent.click(screen.getByText('settings.bugReportSubmit'));
 
     await waitFor(() => {
-      expect(mockCaptureEvent).toHaveBeenCalledWith(
-        expect.objectContaining({
-          level: 'info',
-          message: 'settings.bugReportModulePermission: Agent unavailable after update',
-          extra: {
-            description: 'Agent unavailable after update',
-          },
-        }),
-        expect.objectContaining({
-          attachments: [],
-        })
-      );
+      expect(openExternalUrlMock).toHaveBeenCalledTimes(1);
     });
+
+    const issueUrl = new URL(openExternalUrlMock.mock.calls[0][0]);
+    expect(issueUrl.origin + issueUrl.pathname).toBe('https://github.com/iOfficeAI/AionUi/issues/new');
+    expect(issueUrl.searchParams.get('title')).toBe(
+      '[Bug]: settings.bugReportModulePermission - Agent unavailable after update'
+    );
+    expect(issueUrl.searchParams.get('body')).toContain('## settings.bugReportModuleLabel');
+    expect(issueUrl.searchParams.get('body')).toContain('Agent unavailable after update');
+    expect(messageSuccessMock).toHaveBeenCalledWith('settings.bugReportSuccess');
   });
 
-  it('should attach pasted screenshots when submitting the report', async () => {
+  it('should list pasted screenshot filenames in the draft issue body', async () => {
     render(<FeedbackReportModal visible={true} onCancel={onCancel} />);
 
     document.dispatchEvent(
@@ -370,20 +353,11 @@ describe('FeedbackReportModal', () => {
     fireEvent.click(screen.getByText('settings.bugReportSubmit'));
 
     await waitFor(() => {
-      expect(mockCaptureEvent).toHaveBeenCalledWith(
-        expect.objectContaining({
-          message: 'settings.bugReportModulePermission: Agent unavailable after update',
-        }),
-        expect.objectContaining({
-          attachments: [
-            expect.objectContaining({
-              filename: 'screenshot-1-clipboard.png',
-              contentType: 'image/png',
-            }),
-          ],
-        })
-      );
+      expect(openExternalUrlMock).toHaveBeenCalledTimes(1);
     });
+
+    const issueUrl = new URL(openExternalUrlMock.mock.calls[0][0]);
+    expect(issueUrl.searchParams.get('body')).toContain('- clipboard.png');
   });
 
   it('should keep only the first three pasted screenshots', async () => {
@@ -409,9 +383,7 @@ describe('FeedbackReportModal', () => {
   });
 
   it('should show an error when submitting fails', async () => {
-    mockWithScope.mockImplementationOnce(() => {
-      throw new Error('submit failed');
-    });
+    openExternalUrlMock.mockRejectedValueOnce(new Error('submit failed'));
 
     render(<FeedbackReportModal visible={true} onCancel={onCancel} />);
 

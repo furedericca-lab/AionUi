@@ -47,10 +47,6 @@ vi.mock('@/renderer/services/FileService', () => ({
   isSupportedFile: vi.fn(() => true),
 }));
 
-vi.mock('@/renderer/utils/platform', () => ({
-  isElectronDesktop: () => false, // WebUI mode so file input is rendered
-}));
-
 vi.mock('@/renderer/hooks/file/useUploadState', () => ({
   trackUpload: vi.fn(() => ({ id: 1, onProgress: vi.fn(), finish: vi.fn() })),
 }));

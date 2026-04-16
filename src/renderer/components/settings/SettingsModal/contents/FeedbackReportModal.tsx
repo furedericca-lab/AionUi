@@ -11,17 +11,13 @@ import type { UploadItem } from '@arco-design/web-react/es/Upload';
 import { Info, Plus } from '@icon-park/react';
 import React, { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { openExternalUrl } from '@renderer/utils/platform';
+import packageJson from '../../../../../../package.json';
 
 const DESCRIPTION_MAX_LENGTH = 2000;
 const MAX_SCREENSHOTS = 3;
 const ACCEPTED_IMAGE_TYPES = '.png,.jpg,.jpeg,.gif';
 const SUMMARY_PREVIEW_LENGTH = 60;
-
-type ScreenshotBuffer = {
-  name: string;
-  data: Uint8Array<ArrayBuffer>;
-  type: string;
-};
 
 const getUploadItemKey = (item: Pick<UploadItem, 'name' | 'originFile'>) =>
   `${item.originFile?.name ?? item.name}_${item.originFile?.size ?? 0}`;
@@ -35,6 +31,8 @@ const createPastedImageName = (file: File, index: number) => {
   const ext = file.type.split('/')[1] || 'png';
   return `pasted-screenshot-${timestamp}-${index + 1}.${ext}`;
 };
+
+const ISSUE_BASE_URL = 'https://github.com/iOfficeAI/AionUi/issues/new';
 
 type FeedbackReportModalProps = {
   visible: boolean;
@@ -73,81 +71,48 @@ const FeedbackReportModal: React.FC<FeedbackReportModalProps> = ({ visible, onCa
     setSubmitting(true);
 
     try {
-      // Collect logs via IPC (graceful fallback)
-      let logData: { filename: string; data: number[] } | null = null;
-      try {
-        const electronAPI = window.electronAPI;
-        if (electronAPI?.collectFeedbackLogs) {
-          logData = await electronAPI.collectFeedbackLogs();
-        }
-      } catch {
-        // Non-blocking: continue without logs
-      }
-
-      // Read screenshot files as ArrayBuffer
-      const screenshotBuffers = (
-        await Promise.all(
-          screenshots.map(async (item) => {
-            if (!item.originFile) {
-              return null;
-            }
-
-            const buffer = await item.originFile.arrayBuffer();
-            const ext = item.originFile.name.split('.').pop() || 'png';
-            return {
-              name: item.originFile.name,
-              data: new Uint8Array(buffer),
-              type: item.originFile.type || `image/${ext}`,
-            };
-          })
-        )
-      ).filter((item): item is ScreenshotBuffer => item !== null);
-
-      // Submit via Sentry
-      // Use hint.attachments instead of scope.addAttachment to avoid
-      // @sentry/electron's ScopeToMain normalize() corrupting Uint8Array binary data.
-      const Sentry = await import('@sentry/electron/renderer');
-
-      const attachments: Array<{ filename: string; data: Uint8Array; contentType: string }> = [];
-
-      if (logData) {
-        attachments.push({
-          filename: logData.filename,
-          data: new Uint8Array(logData.data),
-          contentType: 'application/gzip',
-        });
-      }
-
-      screenshotBuffers.forEach((screenshot, index) => {
-        attachments.push({
-          filename: `screenshot-${index + 1}-${screenshot.name}`,
-          data: screenshot.data,
-          contentType: screenshot.type,
-        });
-      });
-
       const normalizedDescription = description.trim().replace(/\s+/g, ' ');
       const summaryPreview =
         normalizedDescription.length > SUMMARY_PREVIEW_LENGTH
           ? `${normalizedDescription.slice(0, SUMMARY_PREVIEW_LENGTH).trimEnd()}...`
           : normalizedDescription;
-      const eventSummary = `${t(selectedModule?.i18nKey ?? 'settings.bugReportModuleOther')}: ${summaryPreview}`;
-
-      Sentry.withScope((scope) => {
-        scope.setTag('type', 'user-feedback');
-        scope.setTag('module', module);
-
-        Sentry.captureEvent(
-          {
-            level: 'info',
-            message: eventSummary,
-            extra: {
-              description: normalizedDescription,
-            },
-          },
-          { attachments }
-        );
+      const selectedModuleLabel = t(selectedModule?.i18nKey ?? 'settings.bugReportModuleOther');
+      const screenshotNames = screenshots.map((item) => item.originFile?.name ?? item.name).filter(Boolean);
+      const environmentSummary = JSON.stringify(
+        {
+          version: packageJson.version,
+          url: window.location.href,
+          language: navigator.language,
+          userAgent: navigator.userAgent,
+          timestamp: new Date().toISOString(),
+        },
+        null,
+        2
+      );
+      const body = [
+        `## ${t('settings.bugReportModuleLabel')}`,
+        selectedModuleLabel,
+        '',
+        `## ${t('settings.bugReportDescriptionLabel')}`,
+        normalizedDescription,
+        '',
+        `## ${t('settings.bugReportScreenshotLabel')}`,
+        screenshotNames.length > 0
+          ? screenshotNames.map((name) => `- ${name}`).join('\n')
+          : `- ${t('settings.bugReportIssueNoScreenshots')}`,
+        '',
+        `## ${t('settings.bugReportIssueEnvironment')}`,
+        '```json',
+        environmentSummary,
+        '```',
+      ].join('\n');
+      const issueParams = new URLSearchParams({
+        labels: 'bug',
+        title: `[Bug]: ${selectedModuleLabel} - ${summaryPreview}`,
+        body,
       });
+
+      await openExternalUrl(`${ISSUE_BASE_URL}?${issueParams.toString()}`);
 
       Message.success(t('settings.bugReportSuccess'));
       resetForm();

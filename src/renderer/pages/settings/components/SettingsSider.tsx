@@ -1,11 +1,10 @@
 import FlexFullContainer from '@/renderer/components/layout/FlexFullContainer';
-import { isElectronDesktop, resolveExtensionAssetUrl } from '@/renderer/utils/platform';
+import { resolveExtensionAssetUrl } from '@/renderer/utils/platform';
 import { extensions as extensionsIpc, type IExtensionSettingsTab } from '@/common/adapter/ipcBridge';
 import { useExtI18n } from '@/renderer/hooks/system/useExtI18n';
 import {
   Communication,
   Computer,
-  Earth,
   Gemini,
   Info,
   Lightning,
@@ -72,7 +71,6 @@ const SettingsSider: React.FC<{ collapsed?: boolean; tooltipEnabled?: boolean }>
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { pathname } = useLocation();
-  const isDesktop = isElectronDesktop();
 
   const [extensionTabs, setExtensionTabs] = useState<IExtensionSettingsTab[]>([]);
   const { resolveExtTabName } = useExtI18n();
@@ -159,7 +157,7 @@ const SettingsSider: React.FC<{ collapsed?: boolean; tooltipEnabled?: boolean }>
       webui: {
         id: 'webui',
         label: t('settings.webui'),
-        icon: isDesktop ? <Earth /> : <Communication />,
+        icon: <Communication />,
         path: 'webui',
       },
       system: { id: 'system', label: t('settings.system'), icon: <System />, path: 'system' },
@@ -236,7 +234,7 @@ const SettingsSider: React.FC<{ collapsed?: boolean; tooltipEnabled?: boolean }>
     }
 
     return { menus: result, groupHeaderAt: headerAt };
-  }, [t, isDesktop, extensionTabs, resolveExtTabName]);
+  }, [t, extensionTabs, resolveExtTabName]);
 
   const siderTooltipProps = getSiderTooltipProps(tooltipEnabled);
   return (
